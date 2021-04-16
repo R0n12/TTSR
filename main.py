@@ -38,7 +38,7 @@ if __name__ == '__main__':
         model=_model,
         optimizer=t.optimizer,
         training_data=_trainset,
-        lr_schrduler=t.scheduler
+        lr_scheduler=t.scheduler
     )
 
     ### test / eval / train
