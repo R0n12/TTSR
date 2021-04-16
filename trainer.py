@@ -57,10 +57,10 @@ class Trainer():
             sample_batched[key] = sample_batched[key].to(self.device)
         return sample_batched
 
-    def train(self, current_epoch=0, is_init=False):
+    def train(self, ds_engine, current_epoch=0, is_init=False):
         self.model.train()
         if (not is_init):
-            self.scheduler.step()
+            ds_engine.step()
         self.logger.info('Current epoch learning rate: %e' %(self.optimizer.param_groups[0]['lr']))
 
         for i_batch, sample_batched in enumerate(self.dataloader['train']):
@@ -106,8 +106,8 @@ class Trainer():
                     if (is_print):
                         self.logger.info( 'adv_loss: %.10f' %(adv_loss.item()) )
 
-            loss.backward()
-            self.optimizer.step()
+            ds_engine.backward(loss)
+            ds_engine.step()
 
         if ((not is_init) and current_epoch % self.args.save_every == 0):
             self.logger.info('saving the model...')

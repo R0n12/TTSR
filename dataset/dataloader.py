@@ -1,6 +1,8 @@
 from torch.utils.data import DataLoader
 from importlib import import_module
-
+def get_trainset(args):
+    m = import_module('dataset.'+args.dataset.lower())
+    return getattr(m,'TrainSet')(args)
 
 def get_dataloader(args):
     ### import module

@@ -9,6 +9,7 @@ import os
 import torch
 import torch.nn as nn
 import warnings
+import deepspeed
 warnings.filterwarnings('ignore')
 
 
@@ -18,18 +19,27 @@ if __name__ == '__main__':
 
     ### dataloader of training set and testing set
     _dataloader = dataloader.get_dataloader(args) if (not args.test) else None
-
+    _trainset = dataloader.get_trainset(args) if (not args.test) else None
     ### device and model
-    device = torch.device('cpu' if args.cpu else 'cuda')
-    _model = TTSR.TTSR(args).to(device)
-    if ((not args.cpu) and (args.num_gpu > 1)):
-        _model = nn.DataParallel(_model, list(range(args.num_gpu)))
+    #device = torch.device('cpu' if args.cpu else 'cuda')
+    _model = TTSR.TTSR(args)
+    #if ((not args.cpu) and (args.num_gpu > 1)):
+        #_model = nn.DataParallel(_model, list(range(args.num_gpu)))
 
     ### loss
     _loss_all = get_loss_dict(args, _logger)
 
     ### trainer
     t = Trainer(args, _logger, _dataloader, _model, _loss_all)
+
+    ### DeepSpeed Initialization
+    model_engine,optimizer,trainloader,_ = deepspeed.initialize(
+        args=args,
+        model=_model,
+        optimizer=t.optimizer,
+        training_data=_trainset,
+        lr_schrduler=t.scheduler
+    )
 
     ### test / eval / train
     if (args.test):
@@ -40,7 +50,7 @@ if __name__ == '__main__':
         t.evaluate()
     else:
         for epoch in range(1, args.num_init_epochs+1):
-            t.train(current_epoch=epoch, is_init=True)
+            t.train(model_engine,current_epoch=epoch, is_init=True)
         for epoch in range(1, args.num_epochs+1):
             t.train(current_epoch=epoch, is_init=False)
             if (epoch % args.val_every == 0):
