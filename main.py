@@ -39,16 +39,7 @@ if __name__ == '__main__':
     _loss_all = get_loss_dict(args, _logger)
 
     ### trainer
-    t = Trainer(args, _logger, _dataloader, _model, _loss_all)
-
-    ### DeepSpeed Initialization
-    model_engine,optimizer,trainloader,_ = deepspeed.initialize(
-        args=args,
-        model=_model,
-        optimizer=t.optimizer,
-        training_data=_trainset,
-        lr_scheduler=t.scheduler
-    )
+    t = Trainer(args, _logger, _dataloader, _model, _loss_all, _trainset)
 
     ### test / eval / train
     if (args.test):
@@ -59,8 +50,8 @@ if __name__ == '__main__':
         t.evaluate()
     else:
         for epoch in range(1, args.num_init_epochs+1):
-            t.train(model_engine, current_epoch=epoch, is_init=True)
+            t.train(current_epoch=epoch, is_init=True)
         for epoch in range(1, args.num_epochs+1):
-            t.train(model_engine, current_epoch=epoch, is_init=False)
+            t.train(current_epoch=epoch, is_init=False)
             if (epoch % args.val_every == 0):
                 t.evaluate(current_epoch=epoch)
