@@ -111,3 +111,9 @@ parser.add_argument('--lr_path', type=str, default='./test/demo/lr/lr.png',
 parser.add_argument('--ref_path', type=str, default='./test/demo/ref/ref.png',
                     help='The path of ref image when testing')
 
+###local_rank for distributed training on gpus
+parser.add_argument("--local_rank",
+                    type=int,
+                    default=-1,
+                    help="local_rank for distributed training on gpus")
+
