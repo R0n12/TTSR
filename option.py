@@ -112,16 +112,8 @@ parser.add_argument('--lr_path', type=str, default='./test/demo/lr/lr.png',
 parser.add_argument('--ref_path', type=str, default='./test/demo/ref/ref.png',
                     help='The path of ref image when testing')
 
-<<<<<<< HEAD
-### Include DeepSpeed configuration arguments
-parser = deepspeed.add_config_arguments(parser)
-
-args = parser.parse_args()
-=======
 ###local_rank for distributed training on gpus
 parser.add_argument("--local_rank",
                     type=int,
                     default=-1,
                     help="local_rank for distributed training on gpus")
-
->>>>>>> 6b9f84d96be5fb83704d20c86b07c811f6784c2b
