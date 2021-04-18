@@ -27,6 +27,10 @@ if __name__ == '__main__':
         #_model = nn.DataParallel(_model, list(range(args.num_gpu)))
 
     ### loss
+    ### {'rec_loss':ReconstructionLoss(), 
+    ### 'per_loss':PerceptualLoss(), 
+    ### 'tpl_loss':TPerceptualLoss(), 
+    ### 'adv_loss':AdversarialLoss()}
     _loss_all = get_loss_dict(args, _logger)
 
     ### trainer

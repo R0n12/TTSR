@@ -1,4 +1,5 @@
 import argparse
+import deepspeed
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
@@ -109,5 +110,8 @@ parser.add_argument('--lr_path', type=str, default='./test/demo/lr/lr.png',
                     help='The path of input lr image when testing')
 parser.add_argument('--ref_path', type=str, default='./test/demo/ref/ref.png',
                     help='The path of ref image when testing')
+
+### Include DeepSpeed configuration arguments
+parser = deepspeed.add_config_arguments(parser)
 
 args = parser.parse_args()
