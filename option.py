@@ -8,7 +8,8 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
-
+        
+    
 parser = argparse.ArgumentParser(description='TTSR')
 
 ### log setting
@@ -17,7 +18,7 @@ parser.add_argument('--save_dir', type=str, default='save_dir',
 parser.add_argument('--reset', type=str2bool, default=False,
                     help='Delete save_dir to create a new one')
 parser.add_argument('--log_file_name', type=str, default='TTSR.log',
-                    help='Log file name')
+                help='Log file name')
 parser.add_argument('--logger_name', type=str, default='TTSR',
                     help='Logger name')
 
@@ -111,7 +112,16 @@ parser.add_argument('--lr_path', type=str, default='./test/demo/lr/lr.png',
 parser.add_argument('--ref_path', type=str, default='./test/demo/ref/ref.png',
                     help='The path of ref image when testing')
 
+<<<<<<< HEAD
 ### Include DeepSpeed configuration arguments
 parser = deepspeed.add_config_arguments(parser)
 
 args = parser.parse_args()
+=======
+###local_rank for distributed training on gpus
+parser.add_argument("--local_rank",
+                    type=int,
+                    default=-1,
+                    help="local_rank for distributed training on gpus")
+
+>>>>>>> 6b9f84d96be5fb83704d20c86b07c811f6784c2b

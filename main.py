@@ -1,4 +1,4 @@
-from option import args
+from option import parser
 from utils import mkExpDir
 from dataset import dataloader
 from model import TTSR
@@ -14,6 +14,11 @@ warnings.filterwarnings('ignore')
 
 
 if __name__ == '__main__':
+    
+    ### include DeepSpeed configuration arguments
+    parser = deepspeed.add_config_arguments(parser)
+    args = parser.parse_args()
+    
     ### make save_dir
     _logger = mkExpDir(args)
 
