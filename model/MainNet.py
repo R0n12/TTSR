@@ -208,45 +208,53 @@ class MainNet(nn.Module):
 
         ### soft-attention
         x11_res = x11
+        ### TT at cell 1-4
         x11_res = torch.cat((x11_res, T_lv3), dim=1)
         x11_res = self.conv11_head(x11_res) #F.relu(self.conv11_head(x11_res))
         x11_res = x11_res * S
         x11 = x11 + x11_res
 
         x11_res = x11
-
+        ## 16 RB at cell 1-5
         for i in range(self.num_res_blocks[1]):
             x11_res = self.RB11[i](x11_res)
         x11_res = self.conv11_tail(x11_res)
+        
+        ## cell 1-7
         x11 = x11 + x11_res
 
         ### stage21, 22
+        ## cell 2-0
         x21 = x11
         x21_res = x21
         x22 = self.conv12(x11)
         x22 = F.relu(self.ps12(x22))
 
         ### soft-attention
+        ## TT at cell 2-1
         x22_res = x22
         x22_res = torch.cat((x22_res, T_lv2), dim=1)
+        ## 1-9 2-3
         x22_res = self.conv22_head(x22_res) #F.relu(self.conv22_head(x22_res))
         x22_res = x22_res * F.interpolate(S, scale_factor=2, mode='bicubic')
         x22 = x22 + x22_res
 
         x22_res = x22
-
+        ## cell 1-8 and 2-2
         x21_res, x22_res = self.ex12(x21_res, x22_res)
-
+        ## cell 1-10 2-4
         for i in range(self.num_res_blocks[2]):
             x21_res = self.RB21[i](x21_res)
             x22_res = self.RB22[i](x22_res)
-
+        ## 1-11 2-5
         x21_res = self.conv21_tail(x21_res)
         x22_res = self.conv22_tail(x22_res)
+        ## 1-12 2-6
         x21 = x21 + x21_res
         x22 = x22 + x22_res
 
         ### stage31, 32, 33
+        ## 4-0
         x31 = x21
         x31_res = x31
         x32 = x22
@@ -255,28 +263,34 @@ class MainNet(nn.Module):
         x33 = F.relu(self.ps23(x33))
 
         ### soft-attention
+        ## 4-1
         x33_res = x33
         x33_res = torch.cat((x33_res, T_lv1), dim=1)
+        ## 1-14 2-8 4-3
         x33_res = self.conv33_head(x33_res) #F.relu(self.conv33_head(x33_res))
         x33_res = x33_res * F.interpolate(S, scale_factor=4, mode='bicubic')
         x33 = x33 + x33_res
         
         x33_res = x33
-
+        ## 1-13 2-7 4-2
         x31_res, x32_res, x33_res = self.ex123(x31_res, x32_res, x33_res)
-
+        ## 1-15 2-9 4-4
         for i in range(self.num_res_blocks[3]):
             x31_res = self.RB31[i](x31_res)
             x32_res = self.RB32[i](x32_res)
             x33_res = self.RB33[i](x33_res)
-
+        ## 1-16 2-10 4-5
         x31_res = self.conv31_tail(x31_res)
         x32_res = self.conv32_tail(x32_res)
         x33_res = self.conv33_tail(x33_res)
+        ## 1-17
         x31 = x31 + x31_res
+        ## 2-11
         x32 = x32 + x32_res
+        ## 4-6
         x33 = x33 + x33_res
-
+       
+        ## 4-7 ~ 4-10
         x = self.merge_tail(x31, x32, x33)
 
         return x
