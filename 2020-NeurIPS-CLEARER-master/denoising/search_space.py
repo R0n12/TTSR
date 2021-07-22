@@ -202,7 +202,9 @@ class SearchSpace(nn.Module):
     # list_channels of branches; list_modules of stages
     def __init__(self, in_channel=1, list_channels=[32, 64, 128, 256], list_modules=[2,4,4,4]):
         super(SearchSpace,self).__init__()
+        # list of channels
         self.list_channels = list_channels
+        # list of modules
         self.list_modules = list_modules
 
         self.stage1 = self.__make_layer(in_channel, list_channels[0], list_modules[0])

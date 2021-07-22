@@ -114,7 +114,7 @@ def train(epoch, train_queue, valid_queue, model, architect, optimizer, lr):
       input_search = input_search.cuda()
       target_search = target_search.cuda()
       architect.step(input, target, input_search, target_search, lr, optimizer, unrolled=args.unrolled)
-    
+    # train the searched model params 
     model.train()
     optimizer.zero_grad()
     loss = model.loss(input, target)
