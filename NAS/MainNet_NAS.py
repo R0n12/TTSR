@@ -1,4 +1,4 @@
-from NAS import LTE_NAS, SearchTransfer_NAS
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -75,13 +75,9 @@ class CSFI2(nn.Module):
 
 #CSFI2 Module Wrapper
 class CSFI2Module(nn.Module):
-    def __init__(self, num_res_blocks, n_feats):
+    def __init__(self, num_res_blocks, n_feats, res_scale):
         super(CSFI2Module, self).__init__()
-        #self.conv21_head = conv3x3(n_feats, n_feats)
-        self.conv22_head = conv3x3(128+n_feats, n_feats)
-
         self.ex12 = CSFI2(n_feats)
-
         self.RB21 = nn.ModuleList()
         self.RB22 = nn.ModuleList()
         for i in range(self.num_res_blocks[2]):
@@ -93,11 +89,7 @@ class CSFI2Module(nn.Module):
         self.conv21_tail = conv3x3(n_feats, n_feats)
         self.conv22_tail = conv3x3(n_feats, n_feats)
 
-    def forward(self, x22_res):
-        x22_res = self.conv22_head(x22_res) #F.relu(self.conv22_head(x22_res))
-        x22_res = x22_res * F.interpolate(S, scale_factor=2, mode='bicubic')
-        x22 = x22 + x22_res
-
+    def forward(self, x22, x21, x21_res):
         x22_res = x22
         ## cell 1-8 and 2-2
         x21_res, x22_res = self.ex12(x21_res, x22_res)
@@ -108,8 +100,10 @@ class CSFI2Module(nn.Module):
         ## 1-11 2-5
         x21_res = self.conv21_tail(x21_res)
         x22_res = self.conv22_tail(x22_res)
-        
-        return x21_res, x22_res
+        ## 1-12 2-6
+        x21 = x21 + x21_res
+        x22 = x22 + x22_res
+        return x21, x22
 
 #CSFI Module for 1x & 2x & 4x
 class CSFI3(nn.Module):
@@ -150,17 +144,15 @@ class CSFI3(nn.Module):
         return x1, x2, x3
 
 #CSFI3 Module Wrapper
-class CSFI3Module(nn.Module)
-    def __init__(self, num_res_blocks, n_feats):
+class CSFI3Module(nn.Module):
+    def __init__(self, num_res_blocks, n_feats, res_scale):
         super(CSFI3Module, self).__init__()
-        self.conv33_head = conv3x3(64+n_feats, n_feats)
-
         self.ex123 = CSFI3(n_feats)
 
         self.RB31 = nn.ModuleList()
         self.RB32 = nn.ModuleList()
         self.RB33 = nn.ModuleList()
-        for i in range(num_res_blocks[3]):
+        for i in range(self.num_res_blocks[3]):
             self.RB31.append(ResBlock(in_channels=n_feats, out_channels=n_feats,
                 res_scale=res_scale))
             self.RB32.append(ResBlock(in_channels=n_feats, out_channels=n_feats,
@@ -171,11 +163,8 @@ class CSFI3Module(nn.Module)
         self.conv31_tail = conv3x3(n_feats, n_feats)
         self.conv32_tail = conv3x3(n_feats, n_feats)
         self.conv33_tail = conv3x3(n_feats, n_feats)
-    def forward(self, x33_res):
-        x33_res = self.conv33_head(x33_res) #F.relu(self.conv33_head(x33_res))
-        x33_res = x33_res * F.interpolate(S, scale_factor=4, mode='bicubic')
-        x33 = x33 + x33_res
-        
+
+    def forward(self, x33, x31_res, x32_res, x31, x32):
         x33_res = x33
         ## 1-13 2-7 4-2
         x31_res, x32_res, x33_res = self.ex123(x31_res, x32_res, x33_res)
@@ -188,11 +177,17 @@ class CSFI3Module(nn.Module)
         x31_res = self.conv31_tail(x31_res)
         x32_res = self.conv32_tail(x32_res)
         x33_res = self.conv33_tail(x33_res)
+        ## 1-17
+        x31 = x31 + x31_res
+        ## 2-11
+        x32 = x32 + x32_res
+        ## 4-6
+        x33 = x33 + x33_res
         
-        return x31_res, x32_res, x33_res
+        return x31, x32, x33
 
 #PS Module	    
-class UpScaleModule(nn.Module)
+class UpScaleModule(nn.Module):
     def __init__(self, n_feats):
         super(UpScaleModule, self).__init__()
         self.conv = conv3x3(n_feats, n_feats*4)
@@ -203,7 +198,76 @@ class UpScaleModule(nn.Module)
         x_high = F.relu(self.ps(x_high))
         return x_high
 
-class TTModule(nn.Module)
+class SAModule1x(nn.Module):
+    def __init__(self, num_res_blocks, n_feats, res_scale):
+        super(SAModule1x, self).__init__()
+        self.conv11_head = conv3x3(256+n_feats, n_feats)
+        self.RB11 = nn.ModuleList()
+        for i in range(num_res_blocks[1]):
+            self.RB11.append(ResBlock(in_channels=n_feats, out_channels=n_feats,
+                res_scale=res_scale))
+        self.conv11_tail = conv3x3(n_feats, n_feats)
+    
+    def forward(self, num_res_blocks, x, T_lv3, S):
+        x11 = x
+        ### soft-attention
+        x11_res = x11
+        ### TT at cell 1-4
+        x11_res = torch.cat((x11_res, T_lv3), dim=1)
+        x11_res = self.conv11_head(x11_res) #F.relu(self.conv11_head(x11_res))
+        x11_res = x11_res * S
+        x11 = x11 + x11_res
+
+        x11_res = x11
+        ## 16 RB at cell 1-5
+        for i in range(num_res_blocks[1]):
+            x11_res = self.RB11[i](x11_res)
+        x11_res = self.conv11_tail(x11_res)
+        
+        ## cell 1-7
+        x11 = x11 + x11_res
+
+        return x11
+
+class SAModule2x(nn.Module):
+    def __init__(self, num_res_blocks, n_feats, res_scale):
+        super(SAModule1x, self).__init__()
+        ### stage21, 22 - CSFI2 Module: Info exchange between 1x res & 2x res
+        #self.conv21_head = conv3x3(n_feats, n_feats)
+        self.conv22_head = conv3x3(128+n_feats, n_feats)
+    
+    def forward(self, num_res_blocks, x22, T_lv2, S):
+        ### soft-attention
+        ## TT at cell 2-1
+        x22_res = x22
+        x22_res = torch.cat((x22_res, T_lv2), dim=1)
+        ## 1-9 2-3
+        x22_res = self.conv22_head(x22_res) #F.relu(self.conv22_head(x22_res))
+        x22_res = x22_res * F.interpolate(S, scale_factor=2, mode='bicubic')
+        x22 = x22 + x22_res
+
+        return x22
+
+class SAModule3x(nn.Module):
+    def __init__(self, num_res_blocks, n_feats, res_scale):
+        super(SAModule1x, self).__init__()
+        ### stage21, 22 - CSFI2 Module: Info exchange between 1x res & 2x res
+        #self.conv31_head = conv3x3(n_feats, n_feats)
+        #self.conv32_head = conv3x3(n_feats, n_feats)
+        self.conv33_head = conv3x3(64+n_feats, n_feats)
+    
+    def forward(self, num_res_blocks, x33, T_lv1, S):
+        ### soft-attention
+        ## 4-1
+        x33_res = x33
+        x33_res = torch.cat((x33_res, T_lv1), dim=1)
+        ## 1-14 2-8 4-3
+        x33_res = self.conv33_head(x33_res) #F.relu(self.conv33_head(x33_res))
+        x33_res = x33_res * F.interpolate(S, scale_factor=4, mode='bicubic')
+        x33 = x33 + x33_res
+
+        return x33
+
         
 class MergeTail(nn.Module):
     def __init__(self, n_feats):
@@ -237,161 +301,66 @@ class MainNet_NAS(nn.Module):
         # Soft Feature Extraction Stage for 1x feat [necessary]
         self.SFE = SFE(self.num_res_blocks[0], n_feats, res_scale)
 
-        # Texture Transformer Module -> see forward() for actual computation
-
-        self.stage1x = self.__make_stage1x(...) ### make stage 1x search space
-
-        
-        ### stage11 - if RB operation Module
-        self.conv11_head = conv3x3(256+n_feats, n_feats)
-        self.RB11 = nn.ModuleList()
-        for i in range(self.num_res_blocks[1]):
-            self.RB11.append(ResBlock(in_channels=n_feats, out_channels=n_feats,
-                res_scale=res_scale))
-        self.conv11_tail = conv3x3(n_feats, n_feats)
+        # Soft Attention Module 1x -> see forward() for actual computation
+        self.stage1x = self.__make_stage1x(num_res_blocks, n_feats, res_scale) ### make stage 1x search space
 
         ### subpixel 1 -> 2 - PS Module: Upscaling 1x res to 2x res [necessary]
-        self.conv12 = conv3x3(n_feats, n_feats*4)
-        self.ps12 = nn.PixelShuffle(2)
+        self.ps12 = UpScaleModule(n_feats)
 
-        self.stage2x = self.__make_stage2x(...) ### make stage 1x 2x search space
-
-        ### stage21, 22 - CSFI2 Module: Info exchange between 1x res & 2x res
-        #self.conv21_head = conv3x3(n_feats, n_feats)
-        self.conv22_head = conv3x3(128+n_feats, n_feats)
-
-        self.ex12 = CSFI2(n_feats)
-        self.RB21 = nn.ModuleList()
-        self.RB22 = nn.ModuleList()
-        for i in range(self.num_res_blocks[2]):
-            self.RB21.append(ResBlock(in_channels=n_feats, out_channels=n_feats,
-                res_scale=res_scale))
-            self.RB22.append(ResBlock(in_channels=n_feats, out_channels=n_feats,
-                res_scale=res_scale))
-
-        self.conv21_tail = conv3x3(n_feats, n_feats)
-        self.conv22_tail = conv3x3(n_feats, n_feats)
+        # Soft Attention Module 2x -> see forward() for actual computation
+        self.stage2x = self.__make_stage2x(num_res_blocks, n_feats, res_scale) ### make stage 1x 2x search space
 
         ### subpixel 2 -> 3 - PS Module: Upscaling 2x res to 4x res [necessary]
-        self.conv23 = conv3x3(n_feats, n_feats*4)
-        self.ps23 = nn.PixelShuffle(2)
+        self.ps23 = UpScaleModule(n_feats)
         
-        self.stage3x=self.__make_stage3x(...) ### make stage 1x 2x 3x search space
-        ### stage31, 32, 33 - CSFI3 Module: Info exchange between 1x & 2x & 4x
-        #self.conv31_head = conv3x3(n_feats, n_feats)
-        #self.conv32_head = conv3x3(n_feats, n_feats)
-        self.conv33_head = conv3x3(64+n_feats, n_feats)
-
-        self.ex123 = CSFI3(n_feats)
-
-        self.RB31 = nn.ModuleList()
-        self.RB32 = nn.ModuleList()
-        self.RB33 = nn.ModuleList()
-        for i in range(self.num_res_blocks[3]):
-            self.RB31.append(ResBlock(in_channels=n_feats, out_channels=n_feats,
-                res_scale=res_scale))
-            self.RB32.append(ResBlock(in_channels=n_feats, out_channels=n_feats,
-                res_scale=res_scale))
-            self.RB33.append(ResBlock(in_channels=n_feats, out_channels=n_feats,
-                res_scale=res_scale))
-
-        self.conv31_tail = conv3x3(n_feats, n_feats)
-        self.conv32_tail = conv3x3(n_feats, n_feats)
-        self.conv33_tail = conv3x3(n_feats, n_feats)
+        self.stage3x = self.__make_stage3x(num_res_blocks, n_feats, res_scale) ### make stage 1x 2x 3x search space
 
         # Final Merge stage for 1x 2x 4x feats
         self.merge_tail = MergeTail(n_feats)
+    
+    def __make_stage1x(self, num_res_blocks, n_feats, res_scale):
+        modules = nn.ModuleList()
+        modules.append(SAModule1x(num_res_blocks, n_feats, res_scale))
+        return modules
+    
+    def __make_stage2x(self, num_res_blocks, n_feats, res_scale):
+        modules = nn.ModuleList()
+        modules.append(SAModule2x(num_res_blocks, n_feats, res_scale))
+        modules.append(CSFI2Module(num_res_blocks, n_feats, res_scale))
+        return modules
+    
+    def __make_stage3x(self, num_res_blocks, n_feats, res_scale):
+        modules = nn.ModuleList()
+        modules.append(SAModule3x(num_res_blocks, n_feats, res_scale))
+        modules.append(CSFI3Module(num_res_blocks, n_feats, res_scale))
+        return modules
 
-    def forward(self, x, S=None, T_lv3=None, T_lv2=None, T_lv1=None):
-        ### shallow feature extraction
+
+    def forward(self, num_res_blocks, x, S=None, T_lv3=None, T_lv2=None, T_lv1=None):
+        ### shallow feature extraction (necessary)
         x = self.SFE(x)
+        ### stage1x[0]: SAModule1x
+        x11 = self.stage1x[0](num_res_blocks, x, T_lv3, S)
 
-        ### stage11
-        x11 = x
-
-        ### soft-attention
-        x11_res = x11
-        ### TT at cell 1-4
-        x11_res = torch.cat((x11_res, T_lv3), dim=1)
-        x11_res = self.conv11_head(x11_res) #F.relu(self.conv11_head(x11_res))
-        x11_res = x11_res * S
-        x11 = x11 + x11_res
-
-        x11_res = x11
-        ## 16 RB at cell 1-5
-        for i in range(self.num_res_blocks[1]):
-            x11_res = self.RB11[i](x11_res)
-        x11_res = self.conv11_tail(x11_res)
-        
-        ## cell 1-7
-        x11 = x11 + x11_res
-
-        ### stage21, 22
-        ## cell 2-0
         x21 = x11
         x21_res = x21
-        x22 = self.conv12(x11)
-        x22 = F.relu(self.ps12(x22))
+        ### Upscale from 1x -> 2x
+        x22 = self.ps12(x11)
+        ### stage2x[0]: SAModule2x
+        ### stage2x[1]: CSFI2Module
+        x22 = self.stage2x[0](num_res_blocks, x22, T_lv2, S)
+        x21, x22 = self.stage2x[1](x22, x21, x21_res)
 
-        ### soft-attention
-        ## TT at cell 2-1
-        x22_res = x22
-        x22_res = torch.cat((x22_res, T_lv2), dim=1)
-        ## 1-9 2-3
-        x22_res = self.conv22_head(x22_res) #F.relu(self.conv22_head(x22_res))
-        x22_res = x22_res * F.interpolate(S, scale_factor=2, mode='bicubic')
-        x22 = x22 + x22_res
-
-        x22_res = x22
-        ## cell 1-8 and 2-2
-        x21_res, x22_res = self.ex12(x21_res, x22_res)
-        ## cell 1-10 2-4
-        for i in range(self.num_res_blocks[2]):
-            x21_res = self.RB21[i](x21_res)
-            x22_res = self.RB22[i](x22_res)
-        ## 1-11 2-5
-        x21_res = self.conv21_tail(x21_res)
-        x22_res = self.conv22_tail(x22_res)
-        ## 1-12 2-6
-        x21 = x21 + x21_res
-        x22 = x22 + x22_res
-
-        ### stage31, 32, 33
-        ## 4-0
         x31 = x21
         x31_res = x31
         x32 = x22
         x32_res = x32
-        x33 = self.conv23(x22)
-        x33 = F.relu(self.ps23(x33))
-
-        ### soft-attention
-        ## 4-1
-        x33_res = x33
-        x33_res = torch.cat((x33_res, T_lv1), dim=1)
-        ## 1-14 2-8 4-3
-        x33_res = self.conv33_head(x33_res) #F.relu(self.conv33_head(x33_res))
-        x33_res = x33_res * F.interpolate(S, scale_factor=4, mode='bicubic')
-        x33 = x33 + x33_res
-        
-        x33_res = x33
-        ## 1-13 2-7 4-2
-        x31_res, x32_res, x33_res = self.ex123(x31_res, x32_res, x33_res)
-        ## 1-15 2-9 4-4
-        for i in range(self.num_res_blocks[3]):
-            x31_res = self.RB31[i](x31_res)
-            x32_res = self.RB32[i](x32_res)
-            x33_res = self.RB33[i](x33_res)
-        ## 1-16 2-10 4-5
-        x31_res = self.conv31_tail(x31_res)
-        x32_res = self.conv32_tail(x32_res)
-        x33_res = self.conv33_tail(x33_res)
-        ## 1-17
-        x31 = x31 + x31_res
-        ## 2-11
-        x32 = x32 + x32_res
-        ## 4-6
-        x33 = x33 + x33_res
+        ### Upscale from 2x -> 3x
+        x33 = self.ps23(x22)
+        ### stage3x[0]: SAModule3x
+        ### stage3x[1]: CSFI3Module
+        x33 = self.stage3x[0](num_res_blocks, x33, T_lv1, S)
+        x31, x32, x33 = self.stage3x[1](x33, x31_res, x32_res, x31, x32)
        
         ## 4-7 ~ 4-10
         x = self.merge_tail(x31, x32, x33)
