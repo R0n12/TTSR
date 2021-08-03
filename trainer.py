@@ -44,7 +44,7 @@ class Trainer():
             args=self.args,
             model=self.model,
             optimizer=self.optimizer,
-            training_data=train_set
+            training_data=train_set,
             lr_scheduler=self.scheduler
         )
         self.max_psnr = 0.

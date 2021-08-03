@@ -19,6 +19,8 @@ class TTSR_Search_Space(nn.Module):
         ### A way to initialize Model Weights
         self.__init_weights()
 
+        self.MSELoss = torch.nn.MSELoss().cuda()
+
 
     def __init_arch(self):
 	### TODO
@@ -44,7 +46,7 @@ class TTSR_Search_Space(nn.Module):
                         nn.init.constant_(m.bias, 0)
    
     def arch_parameters(self):
-	return [self.arch_param]
+	    return [self.arch_param]
 
     def forward(self, lr=None, lrsr=None, ref=None, refsr=None, sr=None):
         if (type(sr) != type(None)):
@@ -63,3 +65,18 @@ class TTSR_Search_Space(nn.Module):
         sr = self.MainNet(lr, S, T_lv3, T_lv2, T_lv1)
 
         return sr, S, T_lv3, T_lv2, T_lv1
+
+    def loss(self, input, target):
+        logits = self(input)
+        mse_loss = self.MSELoss(logits, target)
+        arch_weights = torch.nn.functional.softmax(self.arch_param, dim=1)
+
+        # regular_loss
+        regular_loss = -arch_weights*torch.log10(arch_weights)-(1-arch_weights)*torch.log10(1-arch_weights)
+        # latency loss: computing the average complexity (params num) of modules by running `python search_space.py`
+        # latency_loss = torch.mean(arch_weights[:,0]*0.7+arch_weights[:,1]*0.3)
+
+        return  mse_loss + regular_loss.mean()*0.01 #+ latency_loss*0.1
+
+
+        loss = loss(clearer)*param1 + loss(ttsr)*param2

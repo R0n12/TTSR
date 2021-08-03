@@ -12,7 +12,7 @@ class TTSR_Architect():
     self.model = model
     self.optimizer = torch.optim.Adam(self.model.arch_parameters(), lr=args.arch_learning_rate, betas=(0.5, 0.999), weight_decay=args.arch_weight_decay)
     
-  def step(self, input_train, target_train, input_valid, target_valid, eta, network_optimizer, unrolled):
+  def step(self, input_valid, target_valid, unrolled):
     self.optimizer.zero_grad()
     if unrolled:
       print('args.unrolled should be False')
@@ -22,6 +22,7 @@ class TTSR_Architect():
       self._backward_step(input_valid, target_valid)
     self.optimizer.step()
     
+  # back propagate the loss  
   def _backward_step(self, input_valid, target_valid):
     loss = self.model.loss(input_valid, target_valid)
     loss.backward()

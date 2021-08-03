@@ -349,6 +349,7 @@ class MainNet_NAS(nn.Module):
 
         # Final Merge stage for 1x 2x 4x feats
         self.merge_tail = MergeTail(n_feats)
+
     
     def __make_stage(self, n_feats, res_scale, stage_num):
         modules = nn.ModuleList()
@@ -405,3 +406,5 @@ class MainNet_NAS(nn.Module):
         x = self.merge_tail(x31, x32, x33)
 
         return x
+    
+    
