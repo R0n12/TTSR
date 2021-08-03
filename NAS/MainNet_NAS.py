@@ -44,14 +44,14 @@ class SFE(nn.Module):
             
         self.conv_tail = conv3x3(n_feats, n_feats)
         
-    def forward(self, x):
+    def forward(self, x, feats_dict):
         x = F.relu(self.conv_head(x))
         x1 = x
         for i in range(self.num_res_blocks):
             x = self.RBs[i](x)
         x = self.conv_tail(x)
         x = x + x1
-        return x
+        feats_dict['x'] = x
 
 #CSFI Module for 1x & 2x
 class CSFI2(nn.Module):
@@ -90,10 +90,12 @@ class CSFI2Module(nn.Module):
         self.conv21_tail = conv3x3(n_feats, n_feats)
         self.conv22_tail = conv3x3(n_feats, n_feats)
 
-    def forward(self, x22, x21, x21_res):
+    def forward(self,feats_dict):
+        x22 = feats_dict['x22']
+        x21 = feats_dict['x21']
         x22_res = x22
         ## cell 1-8 and 2-2
-        x21_res, x22_res = self.ex12(x21_res, x22_res)
+        x21_res, x22_res = self.ex12(feats_dict['x21_res'], x22_res)
         ## cell 1-10 2-4
         for i in range(self.num_res_blocks):
             x21_res = self.RB21[i](x21_res)
@@ -104,7 +106,8 @@ class CSFI2Module(nn.Module):
         ## 1-12 2-6
         x21 = x21 + x21_res
         x22 = x22 + x22_res
-        return x21, x22
+        feats_dict['x22'] = x22
+        feats_dict['x21'] = x21
 
 #CSFI Module for 1x & 2x & 4x
 class CSFI3(nn.Module):
@@ -165,10 +168,13 @@ class CSFI3Module(nn.Module):
         self.conv32_tail = conv3x3(n_feats, n_feats)
         self.conv33_tail = conv3x3(n_feats, n_feats)
 
-    def forward(self, x33, x31_res, x32_res, x31, x32):
+    def forward(self, feats_dict):
+        x31 = feats_dict['x31']
+        x32 = feats_dict['x32']
+        x33 = feats_dict['x33']
         x33_res = x33
         ## 1-13 2-7 4-2
-        x31_res, x32_res, x33_res = self.ex123(x31_res, x32_res, x33_res)
+        x31_res, x32_res, x33_res = self.ex123(feats_dict['x31_res'], feats_dict['x32_res'], x33_res)
         ## 1-15 2-9 4-4
         for i in range(self.num_res_blocks):
             x31_res = self.RB31[i](x31_res)
@@ -184,8 +190,11 @@ class CSFI3Module(nn.Module):
         x32 = x32 + x32_res
         ## 4-6
         x33 = x33 + x33_res
+
+        feats_dict['x31'] = x31
+        feats_dict['x32'] = x32
+        feats_dict['x33'] = x33
         
-        return x31, x32, x33
 
 #PS Module	    
 class UpScaleModule(nn.Module):
@@ -194,10 +203,28 @@ class UpScaleModule(nn.Module):
         self.conv = conv3x3(n_feats, n_feats*4)
         self.ps = nn.PixelShuffle(2)
 
-    def forward(self, x_low):
-        x_high = self.conv(x_low)
-        x_high = F.relu(self.ps(x_high))
-        return x_high
+    def forward(self, feats_dict, x_low, stage):
+        if stage == 2:
+            x21 = feats_dict['x11']
+            x21_res = x21
+            x22 = self.conv(feats_dict['x11'])
+            x22 = F.relu(self.ps(x22))
+            feats_dict['x21'] = x21
+            feats_dict['x21_res'] = x21_res
+            feats_dict['x22'] = x22
+        if stage == 3:
+            x31 = feats_dict['x21']
+            x31_res = x31
+            x32 = feats_dict['x22']
+            x32_res = x32
+            x33 = self.conv(feats_dict['x22'])
+            x33 = F.relu(self.ps(x33))
+            feats_dict['x31'] = x31
+            feats_dict['x31_res'] = x31_res
+            feats_dict['x32'] = x32
+            feats_dict['x32_res'] = x32_res
+            feats_dict['x33'] = x33
+            
 
 class SAModule1x(nn.Module):
     def __init__(self, num_res_blocks, n_feats, res_scale):
@@ -210,14 +237,14 @@ class SAModule1x(nn.Module):
                 res_scale=res_scale))
         self.conv11_tail = conv3x3(n_feats, n_feats)
     
-    def forward(self, x, T_lv3, S):
-        x11 = x
+    def forward(self, feats_dict, args_list):
+        x11 = feats_dict['x']
         ### soft-attention
         x11_res = x11
         ### TT at cell 1-4
-        x11_res = torch.cat((x11_res, T_lv3), dim=1)
+        x11_res = torch.cat((x11_res, args_list[1]), dim=1)
         x11_res = self.conv11_head(x11_res) #F.relu(self.conv11_head(x11_res))
-        x11_res = x11_res * S
+        x11_res = x11_res * args_list[0]
         x11 = x11 + x11_res
 
         x11_res = x11
@@ -228,51 +255,49 @@ class SAModule1x(nn.Module):
         
         ## cell 1-7
         x11 = x11 + x11_res
+        feats_dict['x11'] = x11
 
-        x21 = x11
-        x21_res = x21
-
-        return x11, x21, x21_res
 
 class SAModule2x(nn.Module):
-    def __init__(self, num_res_blocks, n_feats):
-        super(SAModule1x, self).__init__()
-        self.num_res_blocks = num_res_blocks
+    def __init__(self, n_feats):
+        super(SAModule2x, self).__init__()
         ### stage21, 22 - CSFI2 Module: Info exchange between 1x res & 2x res
         #self.conv21_head = conv3x3(n_feats, n_feats)
         self.conv22_head = conv3x3(128+n_feats, n_feats)
     
-    def forward(self, x22, T_lv2, S):
+    def forward(self, feats_dict, args_list):
         ### soft-attention
         ## TT at cell 2-1
+        x22 = feats_dict['x22']
         x22_res = x22
-        x22_res = torch.cat((x22_res, T_lv2), dim=1)
+        x22_res = torch.cat((x22_res, args_list[2]), dim=1)
         ## 1-9 2-3
         x22_res = self.conv22_head(x22_res) #F.relu(self.conv22_head(x22_res))
-        x22_res = x22_res * F.interpolate(S, scale_factor=2, mode='bicubic')
+        x22_res = x22_res * F.interpolate(args_list[0], scale_factor=2, mode='bicubic')
         x22 = x22 + x22_res
 
-        return x22
+        feats_dict['x22'] = x22
 
 class SAModule3x(nn.Module):
-    def __init__(self, num_res_blocks, n_feats, res_scale):
-        super(SAModule1x, self).__init__()
+    def __init__(self, n_feats):
+        super(SAModule3x, self).__init__()
         ### stage21, 22 - CSFI2 Module: Info exchange between 1x res & 2x res
         #self.conv31_head = conv3x3(n_feats, n_feats)
         #self.conv32_head = conv3x3(n_feats, n_feats)
         self.conv33_head = conv3x3(64+n_feats, n_feats)
     
-    def forward(self, num_res_blocks, x33, T_lv1, S):
+    def forward(self, feats_dict, args_list):
         ### soft-attention
         ## 4-1
+        x33 = feats_dict['x33']
         x33_res = x33
-        x33_res = torch.cat((x33_res, T_lv1), dim=1)
+        x33_res = torch.cat((x33_res, args_list[3]), dim=1)
         ## 1-14 2-8 4-3
         x33_res = self.conv33_head(x33_res) #F.relu(self.conv33_head(x33_res))
-        x33_res = x33_res * F.interpolate(S, scale_factor=4, mode='bicubic')
+        x33_res = x33_res * F.interpolate(args_list[0], scale_factor=4, mode='bicubic')
         x33 = x33 + x33_res
 
-        return x33
+        feats_dict['x33'] = x33
 
 class MixModule(nn.Module):
     def __init__(self, num_res_blocks, n_feats, res_scale, stage_num):
@@ -286,19 +311,24 @@ class MixModule(nn.Module):
             self.CSFI3Module = CSFI3Module(self.num_res_blocks, n_feats, res_scale)
         self.softmax = nn.Softmax(dim=0)
 
-    def forward(self, x, weights, stage_num):
-        if stage_num == 2:
-            self.SAModule2x()
-        h_x = self.horizontal(x)
-        f_x = self.fuse(x)
+    def forward(self, feats_dict, args_list, weights, stage):
+        SA_dict = feats_dict
+        CSFI_dict = feats_dict
+        if stage == 2:
+            self.SAModule2x(SA_dict, args_list)
+            self.CSFI2Module(CSFI_dict, args_list)
+        if stage == 3:
+            self.SAModule3x(SA_dict, args_list)
+            self.CSFI3Module(CSFI_dict, args_list)
 
         weights = self.softmax(weights)
-
-        x_list = []
-        for i in range(len(x)):
-            x_list.append(weights[0]*h_x[i]+weights[1]*f_x[i])
-        
-        return x_list
+        if stage == 2:
+            feats_dict['x22'] = weights[0]*SA_dict['x22']+weights[1]*CSFI_dict['x22']
+            feats_dict['x21'] = weights[1]*CSFI_dict['x21']
+        if stage == 3:
+            feats_dict['x33'] = weights[0]*SA_dict['x33']+weights[1]*CSFI_dict2['x33']
+            feats_dict['x32'] = weights[1]*CSFI_dict['x32']
+            feats_dict['x31'] = weights[1]*CSFI_dict['x31']
         
 class MergeTail(nn.Module):
     def __init__(self, n_feats):
@@ -309,13 +339,13 @@ class MergeTail(nn.Module):
         self.conv_tail1 = conv3x3(n_feats, n_feats//2)
         self.conv_tail2 = conv1x1(n_feats//2, 3)
 
-    def forward(self, x1, x2, x3):
-        x13 = F.interpolate(x1, scale_factor=4, mode='bicubic')
+    def forward(self, feats_dict):
+        x13 = F.interpolate(feats_dict['x31'], scale_factor=4, mode='bicubic')
         x13 = F.relu(self.conv13(x13))
-        x23 = F.interpolate(x2, scale_factor=2, mode='bicubic')
+        x23 = F.interpolate(feats_dict['x32'], scale_factor=2, mode='bicubic')
         x23 = F.relu(self.conv23(x23))
 
-        x = F.relu(self.conv_merge( torch.cat((x3, x13, x23), dim=1) ))
+        x = F.relu(self.conv_merge( torch.cat((feats_dict['x33'], x13, x23), dim=1) ))
         x = self.conv_tail1(x)
         x = self.conv_tail2(x)
         x = torch.clamp(x, -1, 1)
@@ -350,6 +380,9 @@ class MainNet_NAS(nn.Module):
         # Final Merge stage for 1x 2x 4x feats
         self.merge_tail = MergeTail(n_feats)
 
+        self.__init_architecture()
+        self.init_weights()
+
     
     def __make_stage(self, n_feats, res_scale, stage_num):
         modules = nn.ModuleList()
@@ -377,33 +410,56 @@ class MainNet_NAS(nn.Module):
     #    modules.append(SAModule3x(self.num_res_blocks, n_feats, res_scale))
     #    modules.append(CSFI3Module(self.num_res_blocks, n_feats, res_scale))
     #    return modules
+    def __init_architecture(self):
+        self.arch_param = torch.randn(sum(self.list_modules[::]), 2, dtype=torch.float).cuda()*1e-3
+        self.arch_param.requires_grad = True
 
+    def arch_parameters(self):
+        return [self.arch_param]
+
+    def init_weights(self):
+        print('=> init weights from normal distribution')
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.normal_(m.weight, std=0.001)
+                for name, _ in m.named_parameters():
+                    if name in ['bias']:
+                        nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.ConvTranspose2d):
+                nn.init.normal_(m.weight, std=0.001)
+                for name, _ in m.named_parameters():
+                    if name in ['bias']:
+                        nn.init.constant_(m.bias, 0)
 
     def forward(self, x, S=None, T_lv3=None, T_lv2=None, T_lv1=None):
+        feats_dict = {}
+        args_list = [S, T_lv3, T_lv2, T_lv1]
         ### shallow feature extraction (necessary)
-        x = self.SFE(x)
+        self.SFE(x, feats_dict)
         ### stage1x[0]: SAModule1x
-        x11, x21, x21_res= self.SAModule1x(x, T_lv3, S)
+        self.SAModule1x(feats_dict, args_list)
         ### Upscale from 1x -> 2x
-        x22 = self.ps12(x11)
+        self.ps12(feats_dict,2)
+
         ### stage2x[0]: SAModule2x
         ### stage2x[1]: CSFI2Module
-        x22 = self.stage2x[0](x22, T_lv2, S)
-        x21, x22 = self.stage2x[1](x22, x21, x21_res)
-
-        x31 = x21
-        x31_res = x31
-        x32 = x22
-        x32_res = x32
+        idx = 0
+        for i in range(self.list_modules[0]):
+            self.stage2x[i](feats_dict, args_list, self.arch_param[idx+i],2)
+        
         ### Upscale from 2x -> 3x
-        x33 = self.ps23(x22)
+        self.ps23(feats_dict,3)
         ### stage3x[0]: SAModule3x
         ### stage3x[1]: CSFI3Module
-        x33 = self.stage3x[0](x33, T_lv1, S)
-        x31, x32, x33 = self.stage3x[1](x33, x31_res, x32_res, x31, x32)
+        idx = idx + self.list_modules[1]
+        for i in range(self.list_modules[0]):
+            self.stage3x[i](feats_dict, args_list, self.arch_param[idx+i],3)
        
         ## 4-7 ~ 4-10
-        x = self.merge_tail(x31, x32, x33)
+        x = self.merge_tail(feats_dict)
 
         return x
     
