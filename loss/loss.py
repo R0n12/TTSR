@@ -142,6 +142,14 @@ class AdversarialLoss(nn.Module):
         D_optim_state_dict = self.optimizer.state_dict()
         return D_state_dict, D_optim_state_dict
 
+class ArchitectureLoss(nn.Module):
+    def __init__(self):
+        super(ArchitectureLoss, self).__init__()
+
+    def forward(self, model):
+        arch_weights = torch.nn.functional.softmax(model.arch_param, dim=1)
+        regular_loss = -arch_weights*torch.log10(arch_weights)-(1-arch_weights)*torch.log10(1-arch_weights)
+        return regular_loss.mean() * 0.01
 
 def get_loss_dict(args, logger):
     loss = {}
@@ -157,4 +165,6 @@ def get_loss_dict(args, logger):
         loss['adv_loss'] = AdversarialLoss(logger=logger, use_cpu=args.cpu, num_gpu=args.num_gpu, 
             gan_type=args.GAN_type, gan_k=args.GAN_k, lr_dis=args.lr_rate_dis,
             train_crop_size=args.train_crop_size)
+    loss['arch_loss'] = ArchitectureLoss()
     return loss
+
