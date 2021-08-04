@@ -326,7 +326,7 @@ class MixModule(nn.Module):
             feats_dict['x22'] = weights[0]*SA_dict['x22']+weights[1]*CSFI_dict['x22']
             feats_dict['x21'] = weights[1]*CSFI_dict['x21']
         if stage == 3:
-            feats_dict['x33'] = weights[0]*SA_dict['x33']+weights[1]*CSFI_dict2['x33']
+            feats_dict['x33'] = weights[0]*SA_dict['x33']+weights[1]*CSFI_dict['x33']
             feats_dict['x32'] = weights[1]*CSFI_dict['x32']
             feats_dict['x31'] = weights[1]*CSFI_dict['x31']
         
@@ -416,6 +416,12 @@ class MainNet_NAS(nn.Module):
 
     def arch_parameters(self):
         return [self.arch_param]
+
+    def new(self):
+        model_new = MainNet_NAS().cuda()
+        for x, y in zip(model_new.arch_parameters(), self.arch_parameters()):
+            x.data.copy_(y.data)
+        return model_new
 
     def init_weights(self):
         print('=> init weights from normal distribution')
