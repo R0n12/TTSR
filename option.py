@@ -117,3 +117,8 @@ parser.add_argument("--local_rank",
                     type=int,
                     default=-1,
                     help="local_rank for distributed training on gpus")
+
+### NAS additional params
+parser.add_argument('--arch_learning_rate', type=float, default=3e-4, help='learning rate for arch param')
+parser.add_argument('--arch_weight_decay', type=float, default=1e-3, help='weight decay for arch param')
+parser.add_argument('--grad_clip', type=float, default=5, help='gradient clipping')
