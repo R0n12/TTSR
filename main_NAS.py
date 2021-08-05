@@ -1,8 +1,8 @@
-from option import args
+from option import parser
 from utils import mkExpDir
 from dataset import dataloader
 from NAS import TTSR_Search_Space
-from NAS import TTSR_architect
+from NAS import TTSR_Architect
 from loss.loss import get_loss_dict
 from trainer_NAS import Trainer
 
@@ -15,6 +15,7 @@ warnings.filterwarnings('ignore')
 
 
 if __name__ == '__main__':
+    args = parser.parse_args()
     ### make save_dir
     _logger = mkExpDir(args)
 
@@ -26,8 +27,8 @@ if __name__ == '__main__':
     ### device and model
     device = torch.device('cpu' if args.cpu else 'cuda')
     
-    _model = TTSR_Search_Space(args).to(device)
-    _architect = TTSR_architect(_model, args)
+    _model = TTSR_Search_Space.TTSR_Search_Space(args).to(device)
+    _architect = TTSR_Architect.TTSR_Architect(_model, args)
 
     if ((not args.cpu) and (args.num_gpu > 1)):
         _model = nn.DataParallel(_model, list(range(args.num_gpu)))
@@ -53,13 +54,16 @@ if __name__ == '__main__':
         best_loss = float("inf") 
         best_loss_epoch = 0
         for epoch in range(1, args.num_init_epochs+1):
+            print("Current init epoch: ", epoch)
             # get current learning rate for model param training
             t.train(_architect, current_epoch=epoch, is_init=True)
 
+
         for epoch in range(1, args.num_epochs+1):
+            print("Current epoch: ", epoch)
             # get current learning rate for model param training
             lr = t.scheduler.get_lr()
-            t.train(current_epoch=epoch, is_init=False)
+            t.train(_architect, current_epoch=epoch, is_init=False)
             psnr, ssim = t.infer(epoch)
 
             if psnr > best_psnr and not math.isinf(psnr):
@@ -70,5 +74,7 @@ if __name__ == '__main__':
                 #utils.save(model, os.path.join(args.save, 'best_ssim_weights.pt'))
                 best_ssim_epoch = epoch+1
                 best_ssim = ssim
-            
+            t.logger.info('psnr:%6f ssim:%6f -- best_psnr:%6f best_ssim:%6f', psnr, ssim, best_psnr, best_ssim)
+            t.logger.info('arch:%s', torch.argmax(_model.arch_parameters()[0], dim=1)) 
             t.scheduler.step()
+    t.logger.info('BEST_LOSS(epoch):%6f(%d), BEST_PSNR(epoch):%6f(%d), BEST_SSIM(epoch):%6f(%d)', best_loss, best_loss_epoch, best_psnr, best_psnr_epoch, best_ssim, best_ssim_epoch)

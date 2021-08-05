@@ -65,7 +65,7 @@ class Trainer():
 
         for i_batch, sample_batched in enumerate(self.dataloader['train']):
             #self.optimizer.zero_grad()
-            print('--steps:%d--' % i_batch)
+            
 
             sample_batched = self.prepare(sample_batched)
             lr = sample_batched['LR']

@@ -203,7 +203,7 @@ class UpScaleModule(nn.Module):
         self.conv = conv3x3(n_feats, n_feats*4)
         self.ps = nn.PixelShuffle(2)
 
-    def forward(self, feats_dict, x_low, stage):
+    def forward(self, feats_dict, stage):
         if stage == 2:
             x21 = feats_dict['x11']
             x21_res = x21
@@ -304,11 +304,11 @@ class MixModule(nn.Module):
         super(MixModule, self).__init__()
         self.num_res_blocks = num_res_blocks
         if stage_num == 2:
-            self.SAModule2x = SAModule2x(self.num_res_blocks, n_feats)
-            self.CSFI2Module = CSFI2Module(self.num_res_blocks, n_feats, res_scale)
+            self.SAModule2x = SAModule2x(n_feats)
+            self.CSFI2Module = CSFI2Module(num_res_blocks, n_feats, res_scale)
         if stage_num == 3:
-            self.SAModule3x = SAModule3x(self.num_res_blocks, n_feats)
-            self.CSFI3Module = CSFI3Module(self.num_res_blocks, n_feats, res_scale)
+            self.SAModule3x = SAModule3x(n_feats)
+            self.CSFI3Module = CSFI3Module(num_res_blocks, n_feats, res_scale)
         self.softmax = nn.Softmax(dim=0)
 
     def forward(self, feats_dict, args_list, weights, stage):
@@ -316,10 +316,10 @@ class MixModule(nn.Module):
         CSFI_dict = feats_dict
         if stage == 2:
             self.SAModule2x(SA_dict, args_list)
-            self.CSFI2Module(CSFI_dict, args_list)
+            self.CSFI2Module(CSFI_dict)
         if stage == 3:
             self.SAModule3x(SA_dict, args_list)
-            self.CSFI3Module(CSFI_dict, args_list)
+            self.CSFI3Module(CSFI_dict)
 
         weights = self.softmax(weights)
         if stage == 2:
@@ -370,12 +370,12 @@ class MainNet_NAS(nn.Module):
         self.ps12 = UpScaleModule(n_feats)
 
         # Soft Attention Module 2x -> see forward() for actual computation
-        self.stage2x = self.__make_stage(2) ### make stage 1x 2x search space
+        self.stage2x = self.__make_stage(n_feats, res_scale, 2) ### make stage 1x 2x search space
 
         ### subpixel 2 -> 3 - PS Module: Upscaling 2x res to 4x res [necessary]
         self.ps23 = UpScaleModule(n_feats)
         
-        self.stage3x = self.__make_stage(3) ### make stage 1x 2x 3x search space
+        self.stage3x = self.__make_stage(n_feats, res_scale, 3) ### make stage 1x 2x 3x search space
 
         # Final Merge stage for 1x 2x 4x feats
         self.merge_tail = MergeTail(n_feats)

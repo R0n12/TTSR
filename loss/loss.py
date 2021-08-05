@@ -147,7 +147,7 @@ class ArchitectureLoss(nn.Module):
         super(ArchitectureLoss, self).__init__()
 
     def forward(self, model):
-        arch_weights = torch.nn.functional.softmax(model.arch_param, dim=1)
+        arch_weights = torch.nn.functional.softmax(model.MainNet_NAS.arch_param, dim=1)
         regular_loss = -arch_weights*torch.log10(arch_weights)-(1-arch_weights)*torch.log10(1-arch_weights)
         return regular_loss.mean() * 0.01
 

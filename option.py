@@ -1,5 +1,4 @@
 import argparse
-import deepspeed
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
@@ -87,9 +86,9 @@ parser.add_argument('--batch_size', type=int, default=9,
                     help='Training batch size')
 parser.add_argument('--train_crop_size', type=int, default=40,
                     help='Training data crop size')
-parser.add_argument('--num_init_epochs', type=int, default=2,
+parser.add_argument('--num_init_epochs', type=int, default=5,
                     help='The number of init epochs which are trained with only reconstruction loss')
-parser.add_argument('--num_epochs', type=int, default=1,
+parser.add_argument('--num_epochs', type=int, default=10,
                     help='The number of training epochs')
 parser.add_argument('--print_every', type=int, default=1,
                     help='Print period')
@@ -122,3 +121,5 @@ parser.add_argument("--local_rank",
 parser.add_argument('--arch_learning_rate', type=float, default=3e-4, help='learning rate for arch param')
 parser.add_argument('--arch_weight_decay', type=float, default=1e-3, help='weight decay for arch param')
 parser.add_argument('--grad_clip', type=float, default=5, help='gradient clipping')
+parser.add_argument('--momentum', type=float, default=0.9, help='momentum')
+parser.add_argument('--weight_decay', type=float, default=3e-4, help='weight decay')
