@@ -75,6 +75,6 @@ if __name__ == '__main__':
                 best_ssim_epoch = epoch+1
                 best_ssim = ssim
             t.logger.info('psnr:%6f ssim:%6f -- best_psnr:%6f best_ssim:%6f', psnr, ssim, best_psnr, best_ssim)
-            t.logger.info('arch:%s', torch.argmax(_model.arch_parameters()[0], dim=1)) 
+            t.logger.info('arch:%s', torch.argmax(_model.MainNet_NAS.arch_parameters()[0], dim=1)) 
             t.scheduler.step()
     t.logger.info('BEST_LOSS(epoch):%6f(%d), BEST_PSNR(epoch):%6f(%d), BEST_SSIM(epoch):%6f(%d)', best_loss, best_loss_epoch, best_psnr, best_psnr_epoch, best_ssim, best_ssim_epoch)

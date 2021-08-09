@@ -1,16 +1,65 @@
-[2021-08-05 15:34:54,494] - [trainer_NAS.py file line:64] - INFO: Current epoch learning rate: 1.000000e-04
-[2021-08-05 15:36:44,641] - [trainer_NAS.py file line:64] - INFO: Current epoch learning rate: 1.000000e-04
-[2021-08-05 15:38:33,401] - [trainer_NAS.py file line:64] - INFO: Current epoch learning rate: 1.000000e-04
-[2021-08-05 15:42:58,919] - [trainer_NAS.py file line:121] - INFO: epoch: 1	 batch: 600
-[2021-08-05 15:42:58,956] - [trainer_NAS.py file line:122] - INFO: rec_loss: 0.2244043797
-[2021-08-05 15:42:58,976] - [trainer_NAS.py file line:132] - INFO: per_loss: 0.0672264397
-[2021-08-05 15:42:58,981] - [trainer_NAS.py file line:139] - INFO: tpl_loss: 0.0113043459
-[2021-08-05 15:42:59,066] - [trainer_NAS.py file line:144] - INFO: adv_loss: -0.6135648489
-[2021-08-05 15:42:59,067] - [trainer_NAS.py file line:149] - INFO: arch_loss: 0.0030102998
-[2021-08-05 15:47:22,164] - [trainer_NAS.py file line:121] - INFO: epoch: 1	 batch: 1200
-[2021-08-05 15:47:22,201] - [trainer_NAS.py file line:122] - INFO: rec_loss: 0.1907842308
-[2021-08-05 15:47:22,221] - [trainer_NAS.py file line:132] - INFO: per_loss: 0.0564854704
-[2021-08-05 15:47:22,226] - [trainer_NAS.py file line:139] - INFO: tpl_loss: 0.0086688455
-[2021-08-05 15:47:22,311] - [trainer_NAS.py file line:144] - INFO: adv_loss: -0.2290170938
-[2021-08-05 15:47:22,311] - [trainer_NAS.py file line:149] - INFO: arch_loss: 0.0030102998
-[2021-08-05 15:48:14,789] - [trainer_NAS.py file line:206] - INFO: NAS: Epoch 1 evaluation process for searched model...
+[2021-08-06 11:38:18,384] - [trainer_NAS.py file line:64] - INFO: Current epoch learning rate: 1.000000e-04
+[2021-08-06 11:40:12,849] - [trainer_NAS.py file line:64] - INFO: Current epoch learning rate: 1.000000e-04
+[2021-08-06 11:42:05,816] - [trainer_NAS.py file line:64] - INFO: Current epoch learning rate: 1.000000e-04
+[2021-08-06 11:45:05,614] - [trainer_NAS.py file line:121] - INFO: epoch: 1	 batch: 600
+[2021-08-06 11:45:05,620] - [trainer_NAS.py file line:122] - INFO: rec_loss: 0.2356798947
+[2021-08-06 11:45:05,632] - [trainer_NAS.py file line:132] - INFO: per_loss: 0.0559071675
+[2021-08-06 11:45:05,636] - [trainer_NAS.py file line:139] - INFO: tpl_loss: 0.0129895778
+[2021-08-06 11:45:05,699] - [trainer_NAS.py file line:144] - INFO: adv_loss: -0.1133531705
+[2021-08-06 11:45:05,700] - [trainer_NAS.py file line:149] - INFO: arch_loss: 0.0030102974
+[2021-08-06 11:48:02,788] - [trainer_NAS.py file line:121] - INFO: epoch: 1	 batch: 1200
+[2021-08-06 11:48:02,795] - [trainer_NAS.py file line:122] - INFO: rec_loss: 0.1780126542
+[2021-08-06 11:48:02,807] - [trainer_NAS.py file line:132] - INFO: per_loss: 0.0580508597
+[2021-08-06 11:48:02,810] - [trainer_NAS.py file line:139] - INFO: tpl_loss: 0.0100030182
+[2021-08-06 11:48:02,873] - [trainer_NAS.py file line:144] - INFO: adv_loss: -0.1184029579
+[2021-08-06 11:48:02,874] - [trainer_NAS.py file line:149] - INFO: arch_loss: 0.0030102974
+[2021-08-06 11:50:59,947] - [trainer_NAS.py file line:121] - INFO: epoch: 1	 batch: 1800
+[2021-08-06 11:50:59,954] - [trainer_NAS.py file line:122] - INFO: rec_loss: 0.1610815376
+[2021-08-06 11:50:59,966] - [trainer_NAS.py file line:132] - INFO: per_loss: 0.0527850203
+[2021-08-06 11:50:59,969] - [trainer_NAS.py file line:139] - INFO: tpl_loss: 0.0067616259
+[2021-08-06 11:51:00,033] - [trainer_NAS.py file line:144] - INFO: adv_loss: -0.1207998842
+[2021-08-06 11:51:00,034] - [trainer_NAS.py file line:149] - INFO: arch_loss: 0.0030102974
+[2021-08-06 11:53:50,132] - [trainer_NAS.py file line:206] - INFO: NAS: Epoch 1 evaluation process for searched model...
+[2021-08-06 11:54:29,468] - [main_NAS.py file line:77] - INFO: psnr:22.551822 ssim:0.645029 -- best_psnr:22.551822 best_ssim:0.645029
+[2021-08-06 11:54:29,471] - [main_NAS.py file line:78] - INFO: arch:tensor([1, 0], device='cuda:0')
+[2021-08-06 11:54:29,472] - [trainer_NAS.py file line:64] - INFO: Current epoch learning rate: 1.000000e-04
+[2021-08-06 11:57:25,797] - [trainer_NAS.py file line:121] - INFO: epoch: 2	 batch: 600
+[2021-08-06 11:57:25,801] - [trainer_NAS.py file line:122] - INFO: rec_loss: 0.1849872619
+[2021-08-06 11:57:25,813] - [trainer_NAS.py file line:132] - INFO: per_loss: 0.0681539699
+[2021-08-06 11:57:25,817] - [trainer_NAS.py file line:139] - INFO: tpl_loss: 0.0066589508
+[2021-08-06 11:57:25,880] - [trainer_NAS.py file line:144] - INFO: adv_loss: -0.0913846195
+[2021-08-06 11:57:25,880] - [trainer_NAS.py file line:149] - INFO: arch_loss: 0.0030102974
+[2021-08-06 12:00:22,345] - [trainer_NAS.py file line:121] - INFO: epoch: 2	 batch: 1200
+[2021-08-06 12:00:22,349] - [trainer_NAS.py file line:122] - INFO: rec_loss: 0.1469559520
+[2021-08-06 12:00:22,361] - [trainer_NAS.py file line:132] - INFO: per_loss: 0.0618452169
+[2021-08-06 12:00:22,365] - [trainer_NAS.py file line:139] - INFO: tpl_loss: 0.0052375449
+[2021-08-06 12:00:22,428] - [trainer_NAS.py file line:144] - INFO: adv_loss: -0.0780690983
+[2021-08-06 12:00:22,428] - [trainer_NAS.py file line:149] - INFO: arch_loss: 0.0030102974
+[2021-08-06 12:03:19,709] - [trainer_NAS.py file line:121] - INFO: epoch: 2	 batch: 1800
+[2021-08-06 12:03:19,715] - [trainer_NAS.py file line:122] - INFO: rec_loss: 0.1642267406
+[2021-08-06 12:03:19,728] - [trainer_NAS.py file line:132] - INFO: per_loss: 0.0498258024
+[2021-08-06 12:03:19,731] - [trainer_NAS.py file line:139] - INFO: tpl_loss: 0.0050417064
+[2021-08-06 12:03:19,793] - [trainer_NAS.py file line:144] - INFO: adv_loss: -0.0732787475
+[2021-08-06 12:03:19,794] - [trainer_NAS.py file line:149] - INFO: arch_loss: 0.0030102974
+[2021-08-06 12:06:09,644] - [trainer_NAS.py file line:206] - INFO: NAS: Epoch 2 evaluation process for searched model...
+[2021-08-06 12:06:29,647] - [main_NAS.py file line:77] - INFO: psnr:24.273558 ssim:0.704737 -- best_psnr:24.273558 best_ssim:0.704737
+[2021-08-06 12:06:29,647] - [main_NAS.py file line:78] - INFO: arch:tensor([1, 0], device='cuda:0')
+[2021-08-06 12:06:29,648] - [trainer_NAS.py file line:64] - INFO: Current epoch learning rate: 1.000000e-04
+[2021-08-06 12:09:26,159] - [trainer_NAS.py file line:121] - INFO: epoch: 3	 batch: 600
+[2021-08-06 12:09:26,162] - [trainer_NAS.py file line:122] - INFO: rec_loss: 0.1487025023
+[2021-08-06 12:09:26,174] - [trainer_NAS.py file line:132] - INFO: per_loss: 0.0435669795
+[2021-08-06 12:09:26,178] - [trainer_NAS.py file line:139] - INFO: tpl_loss: 0.0041732197
+[2021-08-06 12:09:26,241] - [trainer_NAS.py file line:144] - INFO: adv_loss: -0.0763307437
+[2021-08-06 12:09:26,241] - [trainer_NAS.py file line:149] - INFO: arch_loss: 0.0030102974
+[2021-08-06 12:12:21,790] - [trainer_NAS.py file line:121] - INFO: epoch: 3	 batch: 1200
+[2021-08-06 12:12:21,795] - [trainer_NAS.py file line:122] - INFO: rec_loss: 0.1513167620
+[2021-08-06 12:12:21,807] - [trainer_NAS.py file line:132] - INFO: per_loss: 0.0553020090
+[2021-08-06 12:12:21,810] - [trainer_NAS.py file line:139] - INFO: tpl_loss: 0.0039645880
+[2021-08-06 12:12:21,873] - [trainer_NAS.py file line:144] - INFO: adv_loss: -0.0851558745
+[2021-08-06 12:12:21,874] - [trainer_NAS.py file line:149] - INFO: arch_loss: 0.0030102974
+[2021-08-06 12:15:17,398] - [trainer_NAS.py file line:121] - INFO: epoch: 3	 batch: 1800
+[2021-08-06 12:15:17,401] - [trainer_NAS.py file line:122] - INFO: rec_loss: 0.1389594376
+[2021-08-06 12:15:17,413] - [trainer_NAS.py file line:132] - INFO: per_loss: 0.0417201072
+[2021-08-06 12:15:17,417] - [trainer_NAS.py file line:139] - INFO: tpl_loss: 0.0034537106
+[2021-08-06 12:15:17,479] - [trainer_NAS.py file line:144] - INFO: adv_loss: -0.0672928169
+[2021-08-06 12:15:17,480] - [trainer_NAS.py file line:149] - INFO: arch_loss: 0.0030102974

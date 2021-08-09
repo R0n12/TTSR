@@ -26,7 +26,7 @@
                    lr_rate_lte	1e-05
                          decay	999999
                          gamma	0.5
-                    batch_size	9
+                    batch_size	5
                train_crop_size	40
                num_init_epochs	2
                     num_epochs	10
