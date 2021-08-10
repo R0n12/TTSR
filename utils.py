@@ -161,3 +161,6 @@ def calc_psnr_and_ssim(sr, hr):
     ssim = calc_ssim(img1, img2)
 
     return psnr, ssim
+
+def save(model, model_path):
+  torch.save({'state_dict':model.state_dict(), 'arch_param': model.MainNet_NAS.arch_parameters()[0]}, model_path)
