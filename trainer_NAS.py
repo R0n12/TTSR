@@ -58,7 +58,7 @@ class Trainer():
         return sample_batched
 
     def train(self, architect, current_epoch=0, is_init=False):
-        self.model.train()
+        #self.model.train()
         #if (not is_init):
             #self.scheduler.step()
         self.logger.info('Current epoch learning rate: %e' %(self.optimizer.param_groups[0]['lr']))
@@ -118,7 +118,7 @@ class Trainer():
                     
                     loss.backward()
                     architect.optimizer.step()
-            
+            self.model.train()
             self.optimizer.zero_grad()
             # calc reconstruction loss
             rec_loss = self.args.rec_w * self.loss_all['rec_loss'](sr, hr)
