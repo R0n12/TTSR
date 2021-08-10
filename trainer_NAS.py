@@ -58,10 +58,10 @@ class Trainer():
         return sample_batched
 
     def train(self, architect, current_epoch=0, is_init=False):
-        #self.model.train()
+        self.model.train()
         #if (not is_init):
             #self.scheduler.step()
-        self.logger.info('Current epoch learning rate: %e' %(self.optimizer.param_groups[0]['lr']))
+        #self.logger.info('Current epoch learning rate: %e' %(self.optimizer.param_groups[0]['lr']))
 
         for i_batch, sample_batched in enumerate(self.dataloader['train']):
             #self.optimizer.zero_grad()
@@ -75,13 +75,18 @@ class Trainer():
             ref_sr = sample_batched['Ref_sr']
             sr, S, T_lv3, T_lv2, T_lv1 = self.model(lr=lr, lrsr=lr_sr, ref=ref, refsr=ref_sr)
             is_print = ((i_batch + 1) % self.args.print_every == 0) ### flag of print
+            #If not in init_epoch
             if (not is_init):
-                if (current_epoch + 1) > 10:
+                #For the first 10 epoch, only train model
+                #architecture adjustment
+                if (current_epoch + 1) > 3:
+                    #switch model mode to evaluation
                     self.model.eval()
                     architect.optimizer.zero_grad()
-                    #loss for TTSR model
+                    #calculate reconstruction loss
                     rec_loss = self.args.rec_w * self.loss_all['rec_loss'](sr, hr)
                     loss = rec_loss
+                    #calculate perceptual loss
                     if ('per_loss' in self.loss_all):
                         sr_relu5_1 = self.vgg19((sr + 1.) / 2.)
                         with torch.no_grad():
@@ -90,6 +95,7 @@ class Trainer():
                         loss += per_loss
                         if (is_print):
                             self.logger.info( 'per_loss: %.10f' %(per_loss.item()) )
+                    #calculate tpl loss
                     if ('tpl_loss' in self.loss_all):
                         sr_lv1, sr_lv2, sr_lv3 = self.model(sr=sr)
                         tpl_loss = self.args.tpl_w * self.loss_all['tpl_loss'](sr_lv3, sr_lv2, sr_lv1, 
@@ -97,6 +103,7 @@ class Trainer():
                         loss += tpl_loss
                         if (is_print):
                             self.logger.info( 'tpl_loss: %.10f' %(tpl_loss.item()) )
+                    #calculate adversarial loss
                     if ('adv_loss' in self.loss_all):
                         adv_loss = self.args.adv_w * self.loss_all['adv_loss'](sr, hr)
                         loss += adv_loss
@@ -111,46 +118,49 @@ class Trainer():
                     
                     loss.backward()
                     architect.optimizer.step()
-                self.model.train()
-                self.optimizer.zero_grad()
-                ### calc loss
-                rec_loss = self.args.rec_w * self.loss_all['rec_loss'](sr, hr)
-                loss = rec_loss
-                if (is_print):
-                    self.logger.info( ('init ' if is_init else '') + 'epoch: ' + str(current_epoch) + 
-                        '\t batch: ' + str(i_batch+1) )
-                    self.logger.info( 'rec_loss: %.10f' %(rec_loss.item()) )
+            
+            self.optimizer.zero_grad()
+            # calc reconstruction loss
+            rec_loss = self.args.rec_w * self.loss_all['rec_loss'](sr, hr)
+            loss = rec_loss
+            if (is_print):
+                self.logger.info( ('init ' if is_init else '') + 'epoch: ' + str(current_epoch) + 
+                    '\t batch: ' + str(i_batch+1) )
+                self.logger.info( 'rec_loss: %.10f' %(rec_loss.item()) )
+            if not is_init:
+                # calc perceptual loss
+                if ('per_loss' in self.loss_all):
+                    sr_relu5_1 = self.vgg19((sr + 1.) / 2.)
+                    with torch.no_grad():
+                        hr_relu5_1 = self.vgg19((hr.detach() + 1.) / 2.)
+                    per_loss = self.args.per_w * self.loss_all['per_loss'](sr_relu5_1, hr_relu5_1)
+                    loss += per_loss
+                    if (is_print):
+                        self.logger.info( 'per_loss: %.10f' %(per_loss.item()) )
+                # calc tpl loss
+                if ('tpl_loss' in self.loss_all):
+                    sr_lv1, sr_lv2, sr_lv3 = self.model(sr=sr)
+                    tpl_loss = self.args.tpl_w * self.loss_all['tpl_loss'](sr_lv3, sr_lv2, sr_lv1, 
+                        S, T_lv3, T_lv2, T_lv1)
+                    loss += tpl_loss
+                    if (is_print):
+                        self.logger.info( 'tpl_loss: %.10f' %(tpl_loss.item()) )
+                # calc adversarial loss
+                if ('adv_loss' in self.loss_all):
+                    adv_loss = self.args.adv_w * self.loss_all['adv_loss'](sr, hr)
+                    loss += adv_loss
+                    if (is_print):
+                        self.logger.info( 'adv_loss: %.10f' %(adv_loss.item()) )
+                #calc arch loss
+                if ('arch_loss' in self.loss_all):
+                    arch_loss = self.loss_all['arch_loss'](self.model)
+                    loss += arch_loss
+                    if (is_print):
+                        self.logger.info( 'arch_loss: %.10f' %(arch_loss.item()) )
 
-                if (not is_init):
-                    if ('per_loss' in self.loss_all):
-                        sr_relu5_1 = self.vgg19((sr + 1.) / 2.)
-                        with torch.no_grad():
-                            hr_relu5_1 = self.vgg19((hr.detach() + 1.) / 2.)
-                        per_loss = self.args.per_w * self.loss_all['per_loss'](sr_relu5_1, hr_relu5_1)
-                        loss += per_loss
-                        if (is_print):
-                            self.logger.info( 'per_loss: %.10f' %(per_loss.item()) )
-                    if ('tpl_loss' in self.loss_all):
-                        sr_lv1, sr_lv2, sr_lv3 = self.model(sr=sr)
-                        tpl_loss = self.args.tpl_w * self.loss_all['tpl_loss'](sr_lv3, sr_lv2, sr_lv1, 
-                            S, T_lv3, T_lv2, T_lv1)
-                        loss += tpl_loss
-                        if (is_print):
-                            self.logger.info( 'tpl_loss: %.10f' %(tpl_loss.item()) )
-                    if ('adv_loss' in self.loss_all):
-                        adv_loss = self.args.adv_w * self.loss_all['adv_loss'](sr, hr)
-                        loss += adv_loss
-                        if (is_print):
-                            self.logger.info( 'adv_loss: %.10f' %(adv_loss.item()) )
-                    if ('arch_loss' in self.loss_all):
-                        arch_loss = self.loss_all['arch_loss'](self.model)
-                        loss += arch_loss
-                        if (is_print):
-                            self.logger.info( 'arch_loss: %.10f' %(arch_loss.item()) )
-
-                loss.backward()
-                nn.utils.clip_grad_norm_(self.model.parameters(), self.args.grad_clip)
-                self.optimizer.step()
+            loss.backward()
+            nn.utils.clip_grad_norm_(self.model.parameters(), self.args.grad_clip)
+            self.optimizer.step()
 
         if ((not is_init) and current_epoch % self.args.save_every == 0):
             self.logger.info('saving the model...')
