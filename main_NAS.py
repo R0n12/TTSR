@@ -63,7 +63,6 @@ if __name__ == '__main__':
         for epoch in range(args.num_epochs):
             # get current learning rate for model param training
             lr = t.scheduler.get_lr()
-            t.logger.info("Current Epoch: %d LR: %e", epoch, lr)
             t.train(_architect, current_epoch=epoch, is_init=False)
             psnr, ssim = t.infer(epoch)
 

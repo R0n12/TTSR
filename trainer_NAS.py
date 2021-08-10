@@ -61,7 +61,7 @@ class Trainer():
         self.model.train()
         #if (not is_init):
             #self.scheduler.step()
-        #self.logger.info('Current epoch learning rate: %e' %(self.optimizer.param_groups[0]['lr']))
+        self.logger.info('Current epoch learning rate: %e' %(self.optimizer.param_groups[0]['lr']))
 
         for i_batch, sample_batched in enumerate(self.dataloader['train']):
             #self.optimizer.zero_grad()
