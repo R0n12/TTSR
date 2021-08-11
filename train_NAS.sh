@@ -14,8 +14,8 @@ python main_NAS.py --save_dir ./NAS/train/CUFED/TTSR \
                --tpl_w 1e-2 \
                --adv_w 1e-3 \
                --batch_size 5 \
-               --num_init_epochs 2 \
-               --num_epochs 10 \
+               --num_init_epochs 0 \
+               --num_epochs 5 \
                --print_every 600 \
                --save_every 10 \
                --val_every 10 \

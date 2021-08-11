@@ -26,7 +26,7 @@ class TTSR_Architect():
   # back propagate the loss  
   def _backward_step(self, sr, hr, loss_dict, is_init, vgg19, feat_dict):
     loss, loss_list = self.model.loss(sr, hr, loss_dict, is_init, vgg19, feat_dict)
-    loss.backward()
+    loss.backward(retain_graph=True)
     return loss_list
 
   def _backward_step_unrolled(self, input_train, target_train, input_valid, target_valid, eta, network_optimizer):

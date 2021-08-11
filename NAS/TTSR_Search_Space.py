@@ -71,7 +71,7 @@ class TTSR_Search_Space(nn.Module):
 
             #calc arch loss
             if ('arch_loss' in loss_dict):
-                arch_loss = loss_dict['arch_loss'](self.model)
+                arch_loss = loss_dict['arch_loss'](self)
                 loss_list['arch_loss'] = arch_loss
                 loss += arch_loss
         

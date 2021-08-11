@@ -55,7 +55,7 @@ if __name__ == '__main__':
         best_loss = float("inf") 
         best_loss_epoch = 0
         for epoch in range(args.num_init_epochs):
-            print("Current init epoch: ", epoch)
+            print("Current init epoch: ", epoch+1)
             # get current learning rate for model param training
             t.train(_architect, current_epoch=epoch, is_init=True)
 
@@ -76,7 +76,7 @@ if __name__ == '__main__':
                 best_ssim = ssim
             
             t.logger.info('psnr:%6f ssim:%6f -- best_psnr:%6f best_ssim:%6f', psnr, ssim, best_psnr, best_ssim)
-            t.logger.info('Current arch_parameters: %s', _model.MainNet_Nas.arch_parameters())
+            t.logger.info('Current arch_parameters: %s', _model.MainNet_NAS.arch_parameters())
             t.logger.info('arch:%s', torch.argmax(_model.MainNet_NAS.arch_parameters()[0], dim=1)) 
             t.scheduler.step()
 

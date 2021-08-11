@@ -84,12 +84,12 @@ class Trainer():
             if (not is_init):
                 #For the first 10 epoch, only train model
                 #architecture training
-                if (current_epoch + 1) > 3:
+                if (current_epoch + 1) > 1:
                     #switch model mode to evaluation
                     self.model.eval()
                     loss_arch = architect.step(sr,hr,self.loss_all,self.vgg19,self.feat_dict,unrolled=self.args.unrolled)
                     if (is_print):
-                        self.logger.info( 'Arch' + ('init ' if is_init else '') + 'epoch: ' + str(current_epoch) + 
+                        self.logger.info( 'Arch' + ('init ' if is_init else '') + 'epoch: ' + str(current_epoch+1) + 
                             '\t batch: ' + str(i_batch+1) )
                         self.logger.info( 'rec_loss: %.10f' %(loss_arch['rec_loss'].item()) )
                         self.logger.info( 'per_loss: %.10f' %(loss_arch['per_loss'].item()) )
@@ -100,7 +100,7 @@ class Trainer():
             self.optimizer.zero_grad()
             loss,loss_model = self.model.loss(sr,hr,self.loss_all,False,self.vgg19,self.feat_dict)
             if (is_print):
-                        self.logger.info( 'Model' + ('init ' if is_init else '') + 'epoch: ' + str(current_epoch) + 
+                        self.logger.info( 'Model' + ('init ' if is_init else '') + 'epoch: ' + str(current_epoch+1) + 
                             '\t batch: ' + str(i_batch+1) )
                         self.logger.info( 'rec_loss: %.10f' %(loss_model['rec_loss'].item()) )
                         self.logger.info( 'per_loss: %.10f' %(loss_model['per_loss'].item()) )
