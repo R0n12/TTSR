@@ -19,15 +19,13 @@ class TTSR_Architect():
       exit()
       # self._backward_step_unrolled(input_train, target_train, input_valid, target_valid, eta, network_optimizer)
     else:
-      loss_list = self._backward_step(sr, hr, loss_dict, is_init, vgg19, feat_dict)
+      self._backward_step(sr, hr, loss_dict, is_init, vgg19, feat_dict)
     self.optimizer.step()
-    return loss_list
     
   # back propagate the loss  
   def _backward_step(self, sr, hr, loss_dict, is_init, vgg19, feat_dict):
-    loss, loss_list = self.model.loss(sr, hr, loss_dict, is_init, vgg19, feat_dict)
-    loss.backward(retain_graph=True)
-    return loss_list
+    loss = self.model.loss(sr, hr, loss_dict, is_init, vgg19, feat_dict)
+    loss.backward()
 
   def _backward_step_unrolled(self, input_train, target_train, input_valid, target_valid, eta, network_optimizer):
     unrolled_model = self._compute_unrolled_model(input_train, target_train, eta, network_optimizer)
