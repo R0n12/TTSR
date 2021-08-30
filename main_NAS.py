@@ -38,7 +38,7 @@ if __name__ == '__main__':
     _loss_all = get_loss_dict(args, _logger)
 
     ### trainer
-    t = Trainer(args, _logger, _dataloader, _model, _loss_all)
+    t = Trainer(args, _logger, _dataloader, _model, _architect, _loss_all)
 
     ### test / eval / train
     if (args.test):
