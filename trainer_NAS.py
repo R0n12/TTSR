@@ -14,7 +14,7 @@ import torchvision.utils as utils
 
 
 class Trainer():
-    def __init__(self, args, logger, dataloader, model, loss_all):
+    def __init__(self, args, logger, dataloader, model, architect, loss_all):
         self.args = args
         self.logger = logger
         self.dataloader = dataloader
@@ -23,6 +23,7 @@ class Trainer():
         self.device = torch.device('cpu') if args.cpu else torch.device('cuda')
         self.vgg19 = Vgg19_NAS.Vgg19_NAS(requires_grad=False).to(self.device)
         self.feat_dict = {}
+        self.architect = architect
         if ((not self.args.cpu) and (self.args.num_gpu > 1)):
             self.vgg19 = nn.DataParallel(self.vgg19, list(range(self.args.num_gpu)))
 
@@ -87,7 +88,7 @@ class Trainer():
                 if (current_epoch + 1) > 1:
                     #switch model mode to evaluation
                     self.model.eval()
-                    architect.step(sr,hr,self.loss_all,self.vgg19,self.feat_dict,unrolled=self.args.unrolled)
+                    self.architect.step(sr,hr,self.loss_all,self.vgg19,self.feat_dict,unrolled=self.args.unrolled)
                     loss_values = self.model.get_loss_values()
                     if (is_print):
                         self.logger.info( 'Arch' + ('init ' if is_init else '') + ' epoch: ' + str(current_epoch+1) + 
@@ -99,7 +100,7 @@ class Trainer():
                         self.logger.info( 'arch_loss: %.10f' %(loss_values['arch_loss'].item()) )
             self.model.train()
             self.optimizer.zero_grad()
-            loss = self.model.loss(sr,hr,self.loss_all,False,self.vgg19,self.feat_dict)
+            loss = self.model.loss(sr,hr,self.loss_all,is_init,self.vgg19,self.feat_dict)
             loss_values = self.model.get_loss_values()
             if (is_print):
                         self.logger.info( 'Model' + ('init ' if is_init else '') + ' epoch: ' + str(current_epoch+1) + 
@@ -109,7 +110,8 @@ class Trainer():
                         self.logger.info( 'tpl_loss: %.10f' %(loss_values['tpl_loss'].item()) )
                         self.logger.info( 'adv_loss: %.10f' %(loss_values['adv_loss'].item()) )
                         self.logger.info( 'arch_loss: %.10f' %(loss_values['arch_loss'].item()) )
-            loss.backward()
+            with torch.autograd.set_detect_anomaly(True):
+                loss.backward()
             nn.utils.clip_grad_norm_(self.model.parameters(), self.args.grad_clip)
             self.optimizer.step()
 
@@ -122,7 +124,7 @@ class Trainer():
             torch.save(model_state_dict, model_name)
 
     def evaluate(self, current_epoch=0):
-        self.logger.info('Epoch ' + str(current_epoch) + ' evaluation process...')
+        self.logger.info('Epoch ' + str(current_epoch+1) + ' evaluation process...')
 
         if (self.args.dataset == 'CUFED'):
             self.model.eval()
@@ -164,7 +166,7 @@ class Trainer():
         self.logger.info('Evaluation over.')
 
     def infer(self, current_epoch=0):
-        self.logger.info('NAS: Epoch ' + str(current_epoch) + ' evaluation process for searched model...')
+        self.logger.info('NAS: Epoch ' + str(current_epoch+1) + ' evaluation process for searched model...')
 
         if (self.args.dataset == 'CUFED'):
             self.model.eval()
