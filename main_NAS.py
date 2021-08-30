@@ -63,8 +63,7 @@ if __name__ == '__main__':
         for epoch in range(args.num_epochs):
             # get current learning rate for model param training
             lr = t.scheduler.get_lr()
-            with torch.autograd.set_detect_anomaly(True):
-                t.train(_architect, current_epoch=epoch, is_init=False)
+            t.train(_architect, current_epoch=epoch, is_init=False)
             psnr, ssim = t.infer(epoch)
 
             if psnr > best_psnr and not math.isinf(psnr):
