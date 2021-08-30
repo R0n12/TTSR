@@ -44,35 +44,34 @@ class TTSR_Search_Space(nn.Module):
         self.loss_values['rec_loss'] = rec_loss
         loss = self.loss_values['rec_loss']
 
-        if not is_init:
-            # calc perceptual loss
-            if ('per_loss' in loss_dict):
-                sr_relu5_1 = vgg19((sr + 1.) / 2.)
-                with torch.no_grad():
-                    hr_relu5_1 = vgg19((hr.detach() + 1.) / 2.)
-                per_loss = self.args.per_w * loss_dict['per_loss'](sr_relu5_1, hr_relu5_1)
-                self.loss_values['per_loss'] = per_loss
-                loss = loss + self.loss_values['per_loss']
+        # calc perceptual loss
+        if ('per_loss' in loss_dict):
+            sr_relu5_1 = vgg19((sr + 1.) / 2.)
+            with torch.no_grad():
+                hr_relu5_1 = vgg19((hr.detach() + 1.) / 2.)
+            per_loss = self.args.per_w * loss_dict['per_loss'](sr_relu5_1, hr_relu5_1)
+            self.loss_values['per_loss'] = per_loss
+            loss = loss + self.loss_values['per_loss']
 
-            # calc tpl loss
-            if ('tpl_loss' in loss_dict):
-                sr_lv1, sr_lv2, sr_lv3 = self(sr=sr)
-                tpl_loss = self.args.tpl_w * loss_dict['tpl_loss'](sr_lv3, sr_lv2, sr_lv1, 
-                    feat_dict['S'], feat_dict['T_lv3'], feat_dict['T_lv2'], feat_dict['T_lv1'])
-                self.loss_values['tpl_loss'] = tpl_loss
-                loss = loss + self.loss_values['tpl_loss']
+        # calc tpl loss
+        if ('tpl_loss' in loss_dict):
+            sr_lv1, sr_lv2, sr_lv3 = self(sr=sr)
+            tpl_loss = self.args.tpl_w * loss_dict['tpl_loss'](sr_lv3, sr_lv2, sr_lv1, 
+                feat_dict['S'], feat_dict['T_lv3'], feat_dict['T_lv2'], feat_dict['T_lv1'])
+            self.loss_values['tpl_loss'] = tpl_loss
+            loss = loss + self.loss_values['tpl_loss']
 
-            # calc adversarial loss
-            if ('adv_loss' in loss_dict):
-                adv_loss = self.args.adv_w * loss_dict['adv_loss'](sr, hr)
-                self.loss_values['adv_loss'] = adv_loss
-                loss = loss + self.loss_values['adv_loss']
+        # calc adversarial loss
+        if ('adv_loss' in loss_dict):
+            adv_loss = self.args.adv_w * loss_dict['adv_loss'](sr, hr)
+            self.loss_values['adv_loss'] = adv_loss
+            loss = loss + self.loss_values['adv_loss']
 
-            #calc arch loss
-            if ('arch_loss' in loss_dict):
-                arch_loss = loss_dict['arch_loss'](self)
-                self.loss_values['arch_loss'] = arch_loss
-                loss = loss + self.loss_values['arch_loss']
+        #calc arch loss
+        if ('arch_loss' in loss_dict):
+            arch_loss = loss_dict['arch_loss'](self)
+            self.loss_values['arch_loss'] = arch_loss
+            loss = loss + self.loss_values['arch_loss']
         
         return loss
     
