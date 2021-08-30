@@ -90,7 +90,7 @@ class Trainer():
                     architect.step(sr,hr,self.loss_all,self.vgg19,self.feat_dict,unrolled=self.args.unrolled)
                     loss_values = self.model.get_loss_values()
                     if (is_print):
-                        self.logger.info( 'Arch' + ('init ' if is_init else '') + 'epoch: ' + str(current_epoch+1) + 
+                        self.logger.info( 'Arch' + ('init ' if is_init else '') + ' epoch: ' + str(current_epoch+1) + 
                             '\t batch: ' + str(i_batch+1) )
                         self.logger.info( 'rec_loss: %.10f' %(loss_values['rec_loss'].item()) )
                         self.logger.info( 'per_loss: %.10f' %(loss_values['per_loss'].item()) )
@@ -102,7 +102,7 @@ class Trainer():
             loss = self.model.loss(sr,hr,self.loss_all,False,self.vgg19,self.feat_dict)
             loss_values = self.model.get_loss_values()
             if (is_print):
-                        self.logger.info( 'Model' + ('init ' if is_init else '') + 'epoch: ' + str(current_epoch+1) + 
+                        self.logger.info( 'Model' + ('init ' if is_init else '') + ' epoch: ' + str(current_epoch+1) + 
                             '\t batch: ' + str(i_batch+1) )
                         self.logger.info( 'rec_loss: %.10f' %(loss_values['rec_loss'].item()) )
                         self.logger.info( 'per_loss: %.10f' %(loss_values['per_loss'].item()) )
