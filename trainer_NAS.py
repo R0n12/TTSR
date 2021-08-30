@@ -111,7 +111,7 @@ class Trainer():
                         self.logger.info( 'adv_loss: %.10f' %(loss_values['adv_loss'].item()) )
                         self.logger.info( 'arch_loss: %.10f' %(loss_values['arch_loss'].item()) )
             with torch.autograd.set_detect_anomaly(True):
-                loss.backward()
+                loss.backward(retain_graph=True)
             nn.utils.clip_grad_norm_(self.model.parameters(), self.args.grad_clip)
             self.optimizer.step()
 
