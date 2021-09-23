@@ -19,13 +19,13 @@ class ResBlock(nn.Module):
         super(ResBlock, self).__init__()
         self.res_scale = res_scale
         self.conv1 = conv3x3(in_channels, out_channels, stride)
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.ReLU(inplace=False)
         self.conv2 = conv3x3(out_channels, out_channels)
         
     def forward(self, x):
         x1 = x
         out = self.conv1(x)
-        out = self.relu(out)
+        out = self.relu(out.clone())
         out = self.conv2(out)
         out = out * self.res_scale + x1
         return out
@@ -420,25 +420,25 @@ class MainNet_NAS(nn.Module):
     def new(self):
         model_new = MainNet_NAS().cuda()
         for x, y in zip(model_new.arch_parameters(), self.arch_parameters()):
-            x.data.copy_(y.data)
+            x.data.copy(y.data)
         return model_new
 
     def init_weights(self):
         print('=> init weights from normal distribution')
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.normal_(m.weight, std=0.001)
+                nn.init.normal(m.weight, std=0.001)
                 for name, _ in m.named_parameters():
                     if name in ['bias']:
-                        nn.init.constant_(m.bias, 0)
+                        nn.init.constant(m.bias, 0)
             elif isinstance(m, nn.BatchNorm2d):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
+                nn.init.constant(m.weight, 1)
+                nn.init.constant(m.bias, 0)
             elif isinstance(m, nn.ConvTranspose2d):
-                nn.init.normal_(m.weight, std=0.001)
+                nn.init.normal(m.weight, std=0.001)
                 for name, _ in m.named_parameters():
                     if name in ['bias']:
-                        nn.init.constant_(m.bias, 0)
+                        nn.init.constant(m.bias, 0)
 
     def forward(self, x, S=None, T_lv3=None, T_lv2=None, T_lv1=None):
         feats_dict = {}

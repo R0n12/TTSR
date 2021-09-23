@@ -68,9 +68,9 @@ class MeanShift(nn.Conv2d):
         super(MeanShift, self).__init__(3, 3, kernel_size=1)
         std = torch.Tensor(rgb_std)
         self.weight.data = torch.eye(3).view(3, 3, 1, 1)
-        self.weight.data.div_(std.view(3, 1, 1, 1))
+        self.weight.data.div(std.view(3, 1, 1, 1))
         self.bias.data = sign * rgb_range * torch.Tensor(rgb_mean)
-        self.bias.data.div_(std)
+        self.bias.data.div(std)
         # self.requires_grad = False
         self.weight.requires_grad = False
         self.bias.requires_grad = False

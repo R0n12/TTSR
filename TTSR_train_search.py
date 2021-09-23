@@ -145,7 +145,7 @@ def train(epoch, train_queue, valid_queue, model, architect, optimizer, lr):
     optimizer.zero_grad()
     loss = model.loss(input, target)
     loss.backward()
-    nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
+    nn.utils.clip_grad_norm(model.parameters(), args.grad_clip)
     optimizer.step()
 
 MSELoss = torch.nn.MSELoss().cuda()

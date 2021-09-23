@@ -82,13 +82,14 @@ class Trainer():
             self.feat_dict['T_lv1'] = T_lv1
             is_print = ((i_batch + 1) % self.args.print_every == 0) ### flag of print
             #If not in init_epoch
-            if (not is_init):
+            '''if (not is_init):
                 #For the first 10 epoch, only train model
                 #architecture training
-                if (current_epoch + 1) > 1:
+                if (current_epoch + 1) > 0:
                     #switch model mode to evaluation
                     self.model.eval()
-                    self.architect.step(sr,hr,self.loss_all,self.vgg19,self.feat_dict,unrolled=self.args.unrolled)
+                    with torch.autograd.set_detect_anomaly(True):
+                        self.architect.step(sr,hr,self.loss_all,self.vgg19,self.feat_dict,unrolled=self.args.unrolled)
                     loss_values = self.model.get_loss_values()
                     if (is_print):
                         self.logger.info( 'Arch' + ('init ' if is_init else '') + ' epoch: ' + str(current_epoch+1) + 
@@ -97,7 +98,7 @@ class Trainer():
                         self.logger.info( 'per_loss: %.10f' %(loss_values['per_loss'].item()) )
                         self.logger.info( 'tpl_loss: %.10f' %(loss_values['tpl_loss'].item()) )
                         self.logger.info( 'adv_loss: %.10f' %(loss_values['adv_loss'].item()) )
-                        self.logger.info( 'arch_loss: %.10f' %(loss_values['arch_loss'].item()) )
+                        self.logger.info( 'arch_loss: %.10f' %(loss_values['arch_loss'].item()) )'''
             self.model.train()
             self.optimizer.zero_grad()
             loss = self.model.loss(sr,hr,self.loss_all,is_init,self.vgg19,self.feat_dict)
@@ -112,7 +113,24 @@ class Trainer():
                         self.logger.info( 'arch_loss: %.10f' %(loss_values['arch_loss'].item()) )
             with torch.autograd.set_detect_anomaly(True):
                 loss.backward(retain_graph=True)
-            nn.utils.clip_grad_norm_(self.model.parameters(), self.args.grad_clip)
+            nn.utils.clip_grad_norm(self.model.parameters(), self.args.grad_clip)
+            if (not is_init):
+                #For the first 10 epoch, only train model
+                #architecture training
+                if (current_epoch + 1) > 0:
+                    #switch model mode to evaluation
+                    self.model.eval()
+                    with torch.autograd.set_detect_anomaly(True):
+                        self.architect.step(sr,hr,self.loss_all,self.vgg19,self.feat_dict,unrolled=self.args.unrolled)
+                    loss_values = self.model.get_loss_values()
+                    if (is_print):
+                        self.logger.info( 'Arch' + ('init ' if is_init else '') + ' epoch: ' + str(current_epoch+1) +
+                            '\t batch: ' + str(i_batch+1) )
+                        self.logger.info( 'rec_loss: %.10f' %(loss_values['rec_loss'].item()) )
+                        self.logger.info( 'per_loss: %.10f' %(loss_values['per_loss'].item()) )
+                        self.logger.info( 'tpl_loss: %.10f' %(loss_values['tpl_loss'].item()) )
+                        self.logger.info( 'adv_loss: %.10f' %(loss_values['adv_loss'].item()) )
+                        self.logger.info( 'arch_loss: %.10f' %(loss_values['arch_loss'].item()) )
             self.optimizer.step()
 
         if ((not is_init) and current_epoch % self.args.save_every == 0):
@@ -174,6 +192,7 @@ class Trainer():
                 psnr, ssim, cnt = 0., 0., 0
                 for i_batch, sample_batched in enumerate(self.dataloader['test']['1']):
                     cnt += 1
+                    print(cnt)
                     sample_batched = self.prepare(sample_batched)
                     lr = sample_batched['LR']
                     lr_sr = sample_batched['LR_sr']

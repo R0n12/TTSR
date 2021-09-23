@@ -18,13 +18,13 @@ class ResBlock(nn.Module):
         super(ResBlock, self).__init__()
         self.res_scale = res_scale
         self.conv1 = conv3x3(in_channels, out_channels, stride)
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.ReLU(inplace=False)
         self.conv2 = conv3x3(out_channels, out_channels)
         
     def forward(self, x):
         x1 = x
         out = self.conv1(x)
-        out = self.relu(out)
+        out = self.relu(out.clone())
         out = self.conv2(out)
         out = out * self.res_scale + x1
         return out

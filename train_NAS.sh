@@ -4,7 +4,7 @@ python main_NAS.py --save_dir ./NAS/train/CUFED/TTSR \
                --num_gpu 1 \
                --num_workers 9 \
                --dataset CUFED \
-               --dataset_dir /scratch/07936/tg872351/datasets/CUFED/ \
+               --dataset_dir /usr/workspace/anthony/super-resolution/TTSR/CUFED \
                --n_feats 64 \
                --lr_rate 1e-4 \
                --lr_rate_dis 1e-4 \

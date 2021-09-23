@@ -17,7 +17,7 @@ class TTSR_Architect():
     if unrolled:
       print('args.unrolled should be False')
       exit()
-      # self._backward_step_unrolled(input_train, target_train, input_valid, target_valid, eta, network_optimizer)
+      #self._backward_step_unrolled(input_train, target_train, input_valid, target_valid, eta, network_optimizer)
     else:
       self._backward_step(sr, hr, loss_dict, is_init, vgg19, feat_dict)
     self.optimizer.step()
@@ -37,19 +37,19 @@ class TTSR_Architect():
     implicit_grads = self._hessian_vector_product(vector, input_train, target_train)
 
     for g, ig in zip(dalpha, implicit_grads):
-      g.data.sub_(eta, ig.data)
+      g.data.sub(eta, ig.data)
 
     for v, g in zip(self.model.arch_parameters(), dalpha):
       if v.grad is None:
         v.grad = g.data
       else:
-        v.grad.data.copy_(g.data)
+        v.grad.data.copy(g.data)
 
   def _compute_unrolled_model(self, input, target, eta, network_optimizer):
     loss = self.model.loss(input, target)
     theta = _concat(self.model.parameters()).data
     try:
-      moment = _concat(network_optimizer.state[v]['momentum_buffer'] for v in self.model.parameters()).mul_(self.network_momentum)
+      moment = _concat(network_optimizer.state[v]['momentum_buffer'] for v in self.model.parameters()).mul(self.network_momentum)
     except:
       moment = torch.zeros_like(theta)
     dtheta = _concat(torch.autograd.grad(loss, self.model.parameters(), retain_graph=True)).data + self.network_weight_decay*theta
@@ -74,16 +74,16 @@ class TTSR_Architect():
   def _hessian_vector_product(self, vector, input, target, r=1e-2):
     R = r / _concat(vector).norm()
     for p, v in zip(self.model.parameters(), vector):
-      p.data.add_(R, v)
+      p.data.add(R, v)
     loss = self.model.loss(input, target)
     grads_p = torch.autograd.grad(loss, self.model.arch_parameters())
 
     for p, v in zip(self.model.parameters(), vector):
-      p.data.sub_(2*R, v)
+      p.data.sub(2*R, v)
     loss = self.model.loss(input, target)
     grads_n = torch.autograd.grad(loss, self.model.arch_parameters())
 
     for p, v in zip(self.model.parameters(), vector):
-      p.data.add_(R, v)
+      p.data.add(R, v)
 
-    return [(x-y).div_(2*R) for x, y in zip(grads_p, grads_n)]
+    return [(x-y).div(2*R) for x, y in zip(grads_p, grads_n)]

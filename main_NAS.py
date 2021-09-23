@@ -7,6 +7,10 @@ from NAS import TTSR_Architect
 from loss.loss import get_loss_dict
 from trainer_NAS import Trainer
 
+import ssl
+
+ssl._create_default_https_context = ssl._create_unverified_context
+
 import os
 import torch
 import torch.nn as nn
