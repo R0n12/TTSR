@@ -124,3 +124,6 @@ parser.add_argument('--grad_clip', type=float, default=5, help='gradient clippin
 parser.add_argument('--momentum', type=float, default=0.9, help='momentum')
 parser.add_argument('--weight_decay', type=float, default=3e-4, help='weight decay')
 parser.add_argument('--unrolled', type=bool, default=False, help='use one-step unrolled validation loss')
+parser.add_argument('--NAS', type=bool,default=False,help='enable differentiable NAS for TTSR')
+
+args = parser.parse_args()

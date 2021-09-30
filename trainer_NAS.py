@@ -58,8 +58,68 @@ class Trainer():
         for key in sample_batched.keys():
             sample_batched[key] = sample_batched[key].to(self.device)
         return sample_batched
+    
+    def train(self, current_epoch=0, is_init=False):
+        self.model.train()
+        if (not is_init):
+            self.scheduler.step()
+        self.logger.info('Current epoch learning rate: %e' %(self.optimizer.param_groups[0]['lr']))
 
-    def train(self, architect, current_epoch=0, is_init=False):
+        for i_batch, sample_batched in enumerate(self.dataloader['train']):
+            self.optimizer.zero_grad()
+
+            sample_batched = self.prepare(sample_batched)
+            lr = sample_batched['LR']
+            lr_sr = sample_batched['LR_sr']
+            hr = sample_batched['HR']
+            ref = sample_batched['Ref']
+            ref_sr = sample_batched['Ref_sr']
+            sr, S, T_lv3, T_lv2, T_lv1 = self.model(lr=lr, lrsr=lr_sr, ref=ref, refsr=ref_sr)
+
+            ### calc loss
+            is_print = ((i_batch + 1) % self.args.print_every == 0) ### flag of print
+
+            rec_loss = self.args.rec_w * self.loss_all['rec_loss'](sr, hr)
+            loss = rec_loss
+            if (is_print):
+                self.logger.info( ('init ' if is_init else '') + 'epoch: ' + str(current_epoch) + 
+                    '\t batch: ' + str(i_batch+1) )
+                self.logger.info( 'rec_loss: %.10f' %(rec_loss.item()) )
+
+            if (not is_init):
+                if ('per_loss' in self.loss_all):
+                    sr_relu5_1 = self.vgg19((sr + 1.) / 2.)
+                    with torch.no_grad():
+                        hr_relu5_1 = self.vgg19((hr.detach() + 1.) / 2.)
+                    per_loss = self.args.per_w * self.loss_all['per_loss'](sr_relu5_1, hr_relu5_1)
+                    loss += per_loss
+                    if (is_print):
+                        self.logger.info( 'per_loss: %.10f' %(per_loss.item()) )
+                if ('tpl_loss' in self.loss_all):
+                    sr_lv1, sr_lv2, sr_lv3 = self.model(sr=sr)
+                    tpl_loss = self.args.tpl_w * self.loss_all['tpl_loss'](sr_lv3, sr_lv2, sr_lv1, 
+                        S, T_lv3, T_lv2, T_lv1)
+                    loss += tpl_loss
+                    if (is_print):
+                        self.logger.info( 'tpl_loss: %.10f' %(tpl_loss.item()) )
+                if ('adv_loss' in self.loss_all):
+                    adv_loss = self.args.adv_w * self.loss_all['adv_loss'](sr, hr)
+                    loss += adv_loss
+                    if (is_print):
+                        self.logger.info( 'adv_loss: %.10f' %(adv_loss.item()) )
+
+            loss.backward()
+            self.optimizer.step()
+
+        if ((not is_init) and current_epoch % self.args.save_every == 0):
+            self.logger.info('saving the model...')
+            tmp = self.model.state_dict()
+            model_state_dict = {key.replace('module.',''): tmp[key] for key in tmp if 
+                (('SearchNet' not in key) and ('_copy' not in key))}
+            model_name = self.args.save_dir.strip('/')+'/model/model_'+str(current_epoch).zfill(5)+'.pt'
+            torch.save(model_state_dict, model_name)
+
+    def train_NAS(self, architect, current_epoch=0, is_init=False):
         #self.model.train()
         #if (not is_init):
             #self.scheduler.step()
@@ -76,10 +136,12 @@ class Trainer():
             ref = sample_batched['Ref']
             ref_sr = sample_batched['Ref_sr']
             sr, S, T_lv3, T_lv2, T_lv1 = self.model(lr=lr, lrsr=lr_sr, ref=ref, refsr=ref_sr)
+
             self.feat_dict['S'] = S
             self.feat_dict['T_lv3'] = T_lv3
             self.feat_dict['T_lv2'] = T_lv2
             self.feat_dict['T_lv1'] = T_lv1
+
             is_print = ((i_batch + 1) % self.args.print_every == 0) ### flag of print
             #If not in init_epoch
             '''if (not is_init):

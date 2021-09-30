@@ -1,4 +1,4 @@
-from option import parser
+from option import args
 from utils import mkExpDir
 from dataset import dataloader
 from model import TTSR
@@ -9,27 +9,27 @@ import os
 import torch
 import torch.nn as nn
 import warnings
-import deepspeed
+#import deepspeed
 warnings.filterwarnings('ignore')
 
 
 if __name__ == '__main__':
     
     ### include DeepSpeed configuration arguments
-    parser = deepspeed.add_config_arguments(parser)
-    args = parser.parse_args()
+    #parser = deepspeed.add_config_arguments(parser)
+    #args = parser.parse_args()
     
     ### make save_dir
     _logger = mkExpDir(args)
 
     ### dataloader of training set and testing set
     _dataloader = dataloader.get_dataloader(args) if (not args.test) else None
-    _trainset = dataloader.get_trainset(args) if (not args.test) else None
+    #_trainset = dataloader.get_trainset(args) if (not args.test) else None
     ### device and model
-    #device = torch.device('cpu' if args.cpu else 'cuda')
+    device = torch.device('cpu' if args.cpu else 'cuda')
     _model = TTSR.TTSR(args)
-    #if ((not args.cpu) and (args.num_gpu > 1)):
-        #_model = nn.DataParallel(_model, list(range(args.num_gpu)))
+    if ((not args.cpu) and (args.num_gpu > 1)):
+        _model = nn.DataParallel(_model, list(range(args.num_gpu)))
 
     ### loss
     ### {'rec_loss':ReconstructionLoss(), 
@@ -39,7 +39,7 @@ if __name__ == '__main__':
     _loss_all = get_loss_dict(args, _logger)
 
     ### trainer
-    t = Trainer(args, _logger, _dataloader, _model, _loss_all, _trainset)
+    t = Trainer(args, _logger, _dataloader, _model, _loss_all)
 
     ### test / eval / train
     if (args.test):

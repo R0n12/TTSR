@@ -33,7 +33,8 @@ if __name__ == '__main__':
     device = torch.device('cpu' if args.cpu else 'cuda')
     
     _model = TTSR_Search_Space.TTSR_Search_Space(args).to(device)
-    _architect = TTSR_Architect.TTSR_Architect(_model, args)
+
+    if args.NAS: _architect = TTSR_Architect.TTSR_Architect(_model, args)
 
     if ((not args.cpu) and (args.num_gpu > 1)):
         _model = nn.DataParallel(_model, list(range(args.num_gpu)))
@@ -51,6 +52,13 @@ if __name__ == '__main__':
     elif (args.eval):
         t.load(model_path=args.model_path)
         t.evaluate()
+    elif not args.NAS:
+        for epoch in range(1, args.num_init_epochs+1):
+            t.train(current_epoch=epoch, is_init=True)
+        for epoch in range(1, args.num_epochs+1):
+            t.train(current_epoch=epoch, is_init=False)
+            if (epoch % args.val_every == 0):
+                t.evaluate(current_epoch=epoch)
     else:
         best_psnr = 0
         best_psnr_epoch = 0
@@ -67,7 +75,7 @@ if __name__ == '__main__':
         for epoch in range(args.num_epochs):
             # get current learning rate for model param training
             lr = t.scheduler.get_lr()
-            t.train(_architect, current_epoch=epoch, is_init=False)
+            t.train_NAS(_architect, current_epoch=epoch, is_init=False)
             psnr, ssim = t.infer(epoch)
 
             if psnr > best_psnr and not math.isinf(psnr):

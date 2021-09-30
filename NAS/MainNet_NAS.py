@@ -354,7 +354,7 @@ class MergeTail(nn.Module):
 
 
 class MainNet_NAS(nn.Module):
-    def __init__(self, num_res_blocks, n_feats, res_scale, list_modules=[1,1]):
+    def __init__(self, num_res_blocks, n_feats, res_scale, list_modules=[1,1], ):
         super(MainNet_NAS, self).__init__()
         self.num_res_blocks = num_res_blocks ### a list containing number of resblocks of different stages
         self.list_modules = list_modules

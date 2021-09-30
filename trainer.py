@@ -14,16 +14,20 @@ import torchvision.utils as utils
 
 
 class Trainer():
-    def __init__(self, args, logger, dataloader, model, loss_all, train_set):
+    def __init__(self, args, logger, dataloader, model, loss_all):
         self.args = args
         self.logger = logger
         self.dataloader = dataloader
         self.model = model
         self.loss_all = loss_all
         self.device = torch.device('cpu') if args.cpu else torch.device('cuda')
-        self.vgg19 = Vgg19.Vgg19(requires_grad=False)
+        #self.vgg19 = Vgg19.Vgg19(requires_grad=False)
         ###if ((not self.args.cpu) and (self.args.num_gpu > 1)):
         ###    self.vgg19 = nn.DataParallel(self.vgg19, list(range(self.args.num_gpu)))
+
+        self.vgg19 = Vgg19.Vgg19(requires_grad=False).to(self.device)
+        if ((not self.args.cpu) and (self.args.num_gpu > 1)):
+            self.vgg19 = nn.DataParallel(self.vgg19, list(range(self.args.num_gpu)))
 
         self.params = [
             {"params": filter(lambda p: p.requires_grad, self.model.MainNet.parameters() if 
@@ -40,13 +44,13 @@ class Trainer():
             self.optimizer, step_size=self.args.decay, gamma=self.args.gamma)
         
         ### initialize ttsr engine
-        self.t_engine,self.t_optimizer,self.t_trainloader,_ = deepspeed.initialize(
-            args=self.args,
-            model=self.model,
-            optimizer=self.optimizer,
-            training_data=train_set,
-            lr_scheduler=self.scheduler
-        )
+        #self.t_engine,self.t_optimizer,self.t_trainloader,_ = deepspeed.initialize(
+            #args=self.args,
+            #model=self.model,
+            #optimizer=self.optimizer,
+            #training_data=train_set,
+            #lr_scheduler=self.scheduler
+        #)
         self.max_psnr = 0.
         self.max_psnr_epoch = 0
         self.max_ssim = 0.
@@ -63,17 +67,17 @@ class Trainer():
 
     def prepare(self, sample_batched):
         for key in sample_batched.keys():
-            sample_batched[key] = sample_batched[key].to(self.t_engine.local_rank)
+            sample_batched[key] = sample_batched[key].to(self.device.local_rank)
         return sample_batched
 
     def train(self, current_epoch=0, is_init=False):
         self.model.train()
         if (not is_init):
-            self.t_engine.step()
+            self.scheduler.step()
         self.logger.info('Current epoch learning rate: %e' %(self.optimizer.param_groups[0]['lr']))
 
-        for i_batch, sample_batched in enumerate(self.t_trainloader):
-            self.t_optimizer.zero_grad()
+        for i_batch, sample_batched in enumerate(self.dataloader['train']):
+            self.optimizer.zero_grad()
 
             sample_batched = self.prepare(sample_batched)
             lr = sample_batched['LR']
@@ -81,7 +85,7 @@ class Trainer():
             hr = sample_batched['HR']
             ref = sample_batched['Ref']
             ref_sr = sample_batched['Ref_sr']
-            sr, S, T_lv3, T_lv2, T_lv1 = self.t_engine(lr=lr, lrsr=lr_sr, ref=ref, refsr=ref_sr)
+            sr, S, T_lv3, T_lv2, T_lv1 = self.model(lr=lr, lrsr=lr_sr, ref=ref, refsr=ref_sr)
 
             ### calc loss
             is_print = ((i_batch + 1) % self.args.print_every == 0) ### flag of print
@@ -114,9 +118,11 @@ class Trainer():
                     loss += adv_loss
                     if (is_print):
                         self.logger.info( 'adv_loss: %.10f' %(adv_loss.item()) )
-
-            self.t_engine.backward(loss)
-            self.t_engine.step()
+            
+            loss.backward()
+            self.optimizer.step()
+            #self.t_engine.backward(loss)
+            #self.t_engine.step()
 
         if ((not is_init) and current_epoch % self.args.save_every == 0):
             self.logger.info('saving the model...')
