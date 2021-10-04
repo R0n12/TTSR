@@ -312,7 +312,7 @@ class MixModule(nn.Module):
         if NAS:
             self.softmax = nn.Softmax(dim=0)
 
-    def forward(self, feats_dict, args_list, weights, stage, NAS):
+    def forward(self, feats_dict, args_list, stage, NAS, weights=None):
         SA_dict = feats_dict
         CSFI_dict = feats_dict
         if stage == 2:
@@ -466,7 +466,10 @@ class MainNet_NAS(nn.Module):
         ### stage2x[1]: CSFI2Module
         idx = 0
         for i in range(self.list_modules[0]):
-            self.stage2x[i](feats_dict, args_list, self.arch_param[idx+i],2, NAS)
+            if NAS:
+            	self.stage2x[i](feats_dict, args_list, 2, NAS, self.arch_param[idx+i])
+            else:
+                self.stage2x[i](feats_dict, args_list, 2, NAS) 
         
         ### Upscale from 2x -> 3x
         self.ps23(feats_dict,3)
@@ -474,7 +477,10 @@ class MainNet_NAS(nn.Module):
         ### stage3x[1]: CSFI3Module
         idx = idx + self.list_modules[1]
         for i in range(self.list_modules[0]):
-            self.stage3x[i](feats_dict, args_list, self.arch_param[idx+i],3, NAS)
+            if NAS:
+                self.stage3x[i](feats_dict, args_list, 3, NAS, self.arch_param[idx+i])
+            else:
+                self.stage3x[i](feats_dict, args_list, 3, NAS)
        
         ## 4-7 ~ 4-10
         x = self.merge_tail(feats_dict)

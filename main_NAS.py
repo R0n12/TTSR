@@ -33,7 +33,7 @@ if __name__ == '__main__':
     device = torch.device('cpu' if args.cpu else 'cuda')
     
     _model = TTSR_Search_Space.TTSR_Search_Space(args).to(device)
-
+    _architect = 0
     if args.NAS: _architect = TTSR_Architect.TTSR_Architect(_model, args)
 
     if ((not args.cpu) and (args.num_gpu > 1)):
@@ -53,6 +53,7 @@ if __name__ == '__main__':
         t.load(model_path=args.model_path)
         t.evaluate()
     elif not args.NAS:
+        print("Default TTSR training ...\n")
         for epoch in range(1, args.num_init_epochs+1):
             t.train(current_epoch=epoch, is_init=True)
         for epoch in range(1, args.num_epochs+1):

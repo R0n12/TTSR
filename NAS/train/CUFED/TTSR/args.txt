@@ -5,7 +5,7 @@
                            cpu	False
                        num_gpu	1
                        dataset	CUFED
-                   dataset_dir	/usr/workspace/anthony/super-resolution/TTSR/CUFED
+                   dataset_dir	/home/xu.3304/Dataset/CUFED
                    num_workers	9
                 num_res_blocks	16+16+8+4
                        n_feats	64
@@ -29,7 +29,7 @@
                     batch_size	5
                train_crop_size	40
                num_init_epochs	0
-                    num_epochs	5
+                    num_epochs	10
                    print_every	600
                     save_every	10
                      val_every	10
@@ -46,3 +46,4 @@
                       momentum	0.9
                   weight_decay	0.0003
                       unrolled	False
+                           NAS	False

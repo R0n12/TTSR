@@ -23,7 +23,7 @@ class Trainer():
         self.device = torch.device('cpu') if args.cpu else torch.device('cuda')
         self.vgg19 = Vgg19_NAS.Vgg19_NAS(requires_grad=False).to(self.device)
         self.feat_dict = {}
-        self.architect = architect
+        if self.args.NAS: self.architect = architect
         if ((not self.args.cpu) and (self.args.num_gpu > 1)):
             self.vgg19 = nn.DataParallel(self.vgg19, list(range(self.args.num_gpu)))
 

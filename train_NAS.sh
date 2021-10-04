@@ -1,10 +1,10 @@
-python main_NAS.py --save_dir ./NAS/train/CUFED/TTSR \
+/home/xu.3304/miniconda3/envs/ttsr-ds/bin/python main_NAS.py --save_dir ./NAS/train/CUFED/TTSR \
                --reset True \
                --log_file_name train.log \
                --num_gpu 1 \
                --num_workers 9 \
                --dataset CUFED \
-               --dataset_dir /usr/workspace/anthony/super-resolution/TTSR/CUFED \
+               --dataset_dir /home/xu.3304/Dataset/CUFED \
                --n_feats 64 \
                --lr_rate 1e-4 \
                --lr_rate_dis 1e-4 \
@@ -15,7 +15,7 @@ python main_NAS.py --save_dir ./NAS/train/CUFED/TTSR \
                --adv_w 1e-3 \
                --batch_size 5 \
                --num_init_epochs 0 \
-               --num_epochs 5 \
+               --num_epochs 10 \
                --print_every 600 \
                --save_every 10 \
                --val_every 10 \
@@ -23,4 +23,5 @@ python main_NAS.py --save_dir ./NAS/train/CUFED/TTSR \
                --arch_weight_decay 1e-3 \
                --grad_clip 5 \
                --momentum 0.9 \
-               --weight_decay 3e-4
+               --weight_decay 3e-4 \
+               --NAS False
