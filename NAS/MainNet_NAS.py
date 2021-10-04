@@ -300,7 +300,7 @@ class SAModule3x(nn.Module):
         feats_dict['x33'] = x33
 
 class MixModule(nn.Module):
-    def __init__(self, num_res_blocks, n_feats, res_scale, stage_num):
+    def __init__(self, num_res_blocks, n_feats, res_scale, stage_num, NAS):
         super(MixModule, self).__init__()
         self.num_res_blocks = num_res_blocks
         if stage_num == 2:
@@ -309,9 +309,10 @@ class MixModule(nn.Module):
         if stage_num == 3:
             self.SAModule3x = SAModule3x(n_feats)
             self.CSFI3Module = CSFI3Module(num_res_blocks, n_feats, res_scale)
-        self.softmax = nn.Softmax(dim=0)
+        if NAS:
+            self.softmax = nn.Softmax(dim=0)
 
-    def forward(self, feats_dict, args_list, weights, stage):
+    def forward(self, feats_dict, args_list, weights, stage, NAS):
         SA_dict = feats_dict
         CSFI_dict = feats_dict
         if stage == 2:
@@ -321,15 +322,24 @@ class MixModule(nn.Module):
             self.SAModule3x(SA_dict, args_list)
             self.CSFI3Module(CSFI_dict)
 
-        weights = self.softmax(weights)
-        if stage == 2:
-            feats_dict['x22'] = weights[0]*SA_dict['x22']+weights[1]*CSFI_dict['x22']
-            feats_dict['x21'] = weights[1]*CSFI_dict['x21']
-        if stage == 3:
-            feats_dict['x33'] = weights[0]*SA_dict['x33']+weights[1]*CSFI_dict['x33']
-            feats_dict['x32'] = weights[1]*CSFI_dict['x32']
-            feats_dict['x31'] = weights[1]*CSFI_dict['x31']
-        
+        if NAS:
+            weights = self.softmax(weights)
+            if stage == 2:
+                feats_dict['x22'] = weights[0]*SA_dict['x22']+weights[1]*CSFI_dict['x22']
+                feats_dict['x21'] = weights[1]*CSFI_dict['x21']
+            if stage == 3:
+                feats_dict['x33'] = weights[0]*SA_dict['x33']+weights[1]*CSFI_dict['x33']
+                feats_dict['x32'] = weights[1]*CSFI_dict['x32']
+                feats_dict['x31'] = weights[1]*CSFI_dict['x31']
+        else:
+            if stage == 2:
+                feats_dict['x22'] = SA_dict['x22']+ CSFI_dict['x22']
+                feats_dict['x21'] = CSFI_dict['x21']
+            if stage == 3:
+                feats_dict['x33'] = SA_dict['x33']+CSFI_dict['x33']
+                feats_dict['x32'] = CSFI_dict['x32']
+                feats_dict['x31'] = CSFI_dict['x31']
+            
 class MergeTail(nn.Module):
     def __init__(self, n_feats):
         super(MergeTail, self).__init__()
@@ -354,9 +364,10 @@ class MergeTail(nn.Module):
 
 
 class MainNet_NAS(nn.Module):
-    def __init__(self, num_res_blocks, n_feats, res_scale, list_modules=[1,1], ):
+    def __init__(self, num_res_blocks, n_feats, res_scale, NAS, list_modules=[1,1]):
         super(MainNet_NAS, self).__init__()
         self.num_res_blocks = num_res_blocks ### a list containing number of resblocks of different stages
+        if not NAS: list_modules = [1,1]
         self.list_modules = list_modules
 
         # Soft Feature Extraction Stage for 1x feat [necessary]
@@ -370,28 +381,29 @@ class MainNet_NAS(nn.Module):
         self.ps12 = UpScaleModule(n_feats)
 
         # Soft Attention Module 2x -> see forward() for actual computation
-        self.stage2x = self.__make_stage(n_feats, res_scale, 2) ### make stage 1x 2x search space
+        self.stage2x = self.__make_stage(n_feats, res_scale, 2, NAS) ### make stage 1x 2x search space
 
         ### subpixel 2 -> 3 - PS Module: Upscaling 2x res to 4x res [necessary]
         self.ps23 = UpScaleModule(n_feats)
         
-        self.stage3x = self.__make_stage(n_feats, res_scale, 3) ### make stage 1x 2x 3x search space
+        self.stage3x = self.__make_stage(n_feats, res_scale, 3, NAS) ### make stage 1x 2x 3x search space
 
         # Final Merge stage for 1x 2x 4x feats
         self.merge_tail = MergeTail(n_feats)
 
-        self.__init_architecture()
-        self.init_weights()
+        if NAS:
+            self.__init_architecture()
+            self.init_weights()
 
     
-    def __make_stage(self, n_feats, res_scale, stage_num):
+    def __make_stage(self, n_feats, res_scale, stage_num, NAS):
         modules = nn.ModuleList()
         if stage_num == 2:
             for _ in range(self.list_modules[0]):
-                modules.append(MixModule(self.num_res_blocks[2], n_feats, res_scale, stage_num))
+                modules.append(MixModule(self.num_res_blocks[2], n_feats, res_scale, stage_num, NAS))
         if stage_num == 3:
             for _ in range(self.list_modules[1]):
-                modules.append(MixModule(self.num_res_blocks[3], n_feats, res_scale, stage_num))
+                modules.append(MixModule(self.num_res_blocks[3], n_feats, res_scale, stage_num, NAS))
         return modules
     
     #def __make_stage1x(self, n_feats, res_scale):
@@ -440,7 +452,7 @@ class MainNet_NAS(nn.Module):
                     if name in ['bias']:
                         nn.init.constant(m.bias, 0)
 
-    def forward(self, x, S=None, T_lv3=None, T_lv2=None, T_lv1=None):
+    def forward(self, x, NAS, S=None, T_lv3=None, T_lv2=None, T_lv1=None):
         feats_dict = {}
         args_list = [S, T_lv3, T_lv2, T_lv1]
         ### shallow feature extraction (necessary)
@@ -454,7 +466,7 @@ class MainNet_NAS(nn.Module):
         ### stage2x[1]: CSFI2Module
         idx = 0
         for i in range(self.list_modules[0]):
-            self.stage2x[i](feats_dict, args_list, self.arch_param[idx+i],2)
+            self.stage2x[i](feats_dict, args_list, self.arch_param[idx+i],2, NAS)
         
         ### Upscale from 2x -> 3x
         self.ps23(feats_dict,3)
@@ -462,7 +474,7 @@ class MainNet_NAS(nn.Module):
         ### stage3x[1]: CSFI3Module
         idx = idx + self.list_modules[1]
         for i in range(self.list_modules[0]):
-            self.stage3x[i](feats_dict, args_list, self.arch_param[idx+i],3)
+            self.stage3x[i](feats_dict, args_list, self.arch_param[idx+i],3, NAS)
        
         ## 4-7 ~ 4-10
         x = self.merge_tail(feats_dict)

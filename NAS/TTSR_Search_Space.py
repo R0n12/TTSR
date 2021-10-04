@@ -10,7 +10,7 @@ class TTSR_Search_Space(nn.Module):
         super(TTSR_Search_Space, self).__init__()
         self.args = args
         self.num_res_blocks = list( map(int, args.num_res_blocks.split('+')) )
-        self.MainNet_NAS = MainNet_NAS.MainNet_NAS(num_res_blocks=self.num_res_blocks, n_feats=args.n_feats, res_scale=args.res_scale, mode=args.NAS)
+        self.MainNet_NAS = MainNet_NAS.MainNet_NAS(num_res_blocks=self.num_res_blocks, n_feats=args.n_feats, res_scale=args.res_scale, NAS=args.NAS)
         self.LTE_NAS      = LTE_NAS.LTE_NAS(requires_grad=True)
         self.LTE_NAS_copy = LTE_NAS.LTE_NAS(requires_grad=False) ### used in transferal perceptual loss
         self.SearchTransfer_NAS = SearchTransfer_NAS.SearchTransfer_NAS()
@@ -30,7 +30,7 @@ class TTSR_Search_Space(nn.Module):
 
         S, T_lv3, T_lv2, T_lv1 = self.SearchTransfer_NAS(lrsr_lv3, refsr_lv3, ref_lv1, ref_lv2, ref_lv3)
 
-        sr = self.MainNet_NAS(lr, S, T_lv3, T_lv2, T_lv1)
+        sr = self.MainNet_NAS(lr, self.args.NAS, S, T_lv3, T_lv2, T_lv1)
 
         return sr, S, T_lv3, T_lv2, T_lv1
 
