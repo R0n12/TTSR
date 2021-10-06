@@ -71,8 +71,6 @@ class Trainer():
             ckp = torch.load(ckp_path+"/model_"+str(epoch)+".pt")
             self.model.load_state_dict(ckp['model_state_dict'])
             self.optimizer.load_state_dict(ckp['optimizer_state_dict'])
-            loss = ckp['loss']
-        return loss
 
 
     def prepare(self, sample_batched):
@@ -83,7 +81,7 @@ class Trainer():
     def train(self, current_epoch=0, is_init=False):
         if self.args.resume >0:
             print("Trianing started from epoch: "+str(self.args.resume))
-            
+
         self.model.train()
         if (not is_init):
             self.scheduler.step()
@@ -145,6 +143,7 @@ class Trainer():
             model_name = self.args.save_dir.strip('/')+'/model/model_'+str(current_epoch).zfill(5)+'.pt'
             torch.save(model_state_dict, model_name)
 
+        print("Current epoch: "+str(current_epoch))
         if ((not is_init) and current_epoch % self.args.ckp_every == 0):
             ckp_path = self.args.ckp_path+'/model_'+str(current_epoch)+'.pt'
             self.logger.info('checkpointing the model ...')

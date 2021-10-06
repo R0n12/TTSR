@@ -53,6 +53,13 @@ class Trainer():
             model_state_dict = self.model.state_dict()
             model_state_dict.update(model_state_dict_save)
             self.model.load_state_dict(model_state_dict)
+    
+    def load_ckp(self, epoch, ckp_path=None):
+        if ckp_path:
+            self.logger.info('Loading from: '+ ckp_path)
+            ckp = torch.load(ckp_path+"/model_"+str(epoch)+".pt")
+            self.model.load_state_dict(ckp['model_state_dict'])
+            self.optimizer.load_state_dict(ckp['optimizer_state_dict'])
 
     def prepare(self, sample_batched):
         for key in sample_batched.keys():
@@ -118,6 +125,19 @@ class Trainer():
                 (('SearchNet' not in key) and ('_copy' not in key))}
             model_name = self.args.save_dir.strip('/')+'/model/model_'+str(current_epoch).zfill(5)+'.pt'
             torch.save(model_state_dict, model_name)
+        
+        if ((not is_init) and current_epoch % self.args.ckp_every == 0):
+            ckp_path = self.args.ckp_path+'/model_'+str(current_epoch)+'.pt'
+            self.logger.info('checkpointing the model ...')
+            ckp_model = self.model.state_dict()
+            ckp_loss = loss
+            ckp_optimizer = self.optimizer.state_dict()
+            torch.save({
+            'epoch': current_epoch,
+            'model_state_dict': ckp_model,
+            'optimizer_state_dict': ckp_optimizer,
+            'loss': ckp_loss,
+            }, ckp_path)
 
     def train_NAS(self, architect, current_epoch=0, is_init=False):
         #self.model.train()
