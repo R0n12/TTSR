@@ -14,6 +14,8 @@ parser = argparse.ArgumentParser(description='TTSR')
 ### log setting
 parser.add_argument('--save_dir', type=str, default='save_dir',
                     help='Directory to save log, arguments, models and images')
+parser.add_argument('--ckp_dir', type=str, default='ckp_dir',
+                    help='Directory to save checkpoints')
 parser.add_argument('--reset', type=str2bool, default=False,
                     help='Delete save_dir to create a new one')
 parser.add_argument('--log_file_name', type=str, default='TTSR.log',
@@ -96,6 +98,9 @@ parser.add_argument('--save_every', type=int, default=999999,
                     help='Save period')
 parser.add_argument('--val_every', type=int, default=999999,
                     help='Validation period')
+parser.add_argument('--ckp_every', type=int, default=999999,
+                    help='checkpoint period')
+
 
 ### evaluate / test / finetune setting
 parser.add_argument('--eval', type=str2bool, default=False,
@@ -110,6 +115,8 @@ parser.add_argument('--lr_path', type=str, default='./test/demo/lr/lr.png',
                     help='The path of input lr image when testing')
 parser.add_argument('--ref_path', type=str, default='./test/demo/ref/ref.png',
                     help='The path of ref image when testing')
+parser.add_argument('--resume', type=int, default=0,
+                    help='Resume mode')
 
 ###local_rank for distributed training on gpus
 parser.add_argument("--local_rank",
