@@ -1,4 +1,5 @@
 /home/xu.3304/miniconda3/envs/ttsr-ds/bin/python main_NAS.py --save_dir ./NAS/train/CUFED/TTSR \
+               --ckp_dir ./NAS/train/CUFED/TTSR/checkpoints \
                --reset True \
                --log_file_name train.log \
                --num_gpu 1 \
@@ -24,4 +25,5 @@
                --grad_clip 5 \
                --momentum 0.9 \
                --weight_decay 3e-4 \
-               --NAS False
+               --NAS False \
+               --ckp_every 1

@@ -45,6 +45,7 @@ def mkExpDir(args):
             shutil.rmtree(args.save_dir)
 
     os.makedirs(args.save_dir)
+    os.makedirs(args.ckp_dir)
     # os.makedirs(os.path.join(args.save_dir, 'img'))
 
     if ((not args.eval) and (not args.test)):

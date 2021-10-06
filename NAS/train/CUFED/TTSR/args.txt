@@ -1,4 +1,5 @@
                       save_dir	./NAS/train/CUFED/TTSR
+                       ckp_dir	./NAS/train/CUFED/TTSR/checkpoints
                          reset	True
                  log_file_name	train.log
                    logger_name	TTSR
@@ -33,12 +34,14 @@
                    print_every	600
                     save_every	10
                      val_every	10
+                     ckp_every	1
                           eval	False
              eval_save_results	False
                     model_path	None
                           test	False
                        lr_path	./test/demo/lr/lr.png
                       ref_path	./test/demo/ref/ref.png
+                        resume	0
                     local_rank	-1
             arch_learning_rate	0.0003
              arch_weight_decay	0.001

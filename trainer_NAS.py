@@ -127,7 +127,7 @@ class Trainer():
             torch.save(model_state_dict, model_name)
         
         if ((not is_init) and current_epoch % self.args.ckp_every == 0):
-            ckp_path = self.args.ckp_path+'/model_'+str(current_epoch)+'.pt'
+            ckp_path = self.args.ckp_dir.strip('/')+'/model_'+str(current_epoch)+'.pt'
             self.logger.info('checkpointing the model ...')
             ckp_model = self.model.state_dict()
             ckp_loss = loss
@@ -135,8 +135,7 @@ class Trainer():
             torch.save({
             'epoch': current_epoch,
             'model_state_dict': ckp_model,
-            'optimizer_state_dict': ckp_optimizer,
-            'loss': ckp_loss,
+            'optimizer_state_dict': ckp_optimizer
             }, ckp_path)
 
     def train_NAS(self, architect, current_epoch=0, is_init=False):
